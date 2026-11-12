@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#000000">
+<title>ترجمان الألعاب</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;background:#000;color:#fff;font-family:-apple-system,system-ui,"Segoe UI",Tahoma,sans-serif;overflow:hidden}
+  .hide{display:none!important}
+  button,select,input{font-family:inherit;font-size:15px}
+  button{background:#222;color:#fff;border:1px solid #444;border-radius:12px;padding:9px 12px;white-space:nowrap}
+  button.on{background:#ffd400;color:#000;border-color:#ffd400;font-weight:700}
+  button.big{font-size:19px;padding:15px 26px;background:#ffd400;color:#000;border:0;font-weight:800;border-radius:16px;width:min(320px,90%)}
+  button.big.alt{background:#2b6cff;color:#fff}
+
+  /* شاشة البداية */
+  #start{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;text-align:center;background:radial-gradient(circle at 50% 20%,#1d2a4a,#000 70%);overflow:auto}
+  #start h1{margin:0;font-size:34px}
+  #start h1 span{color:#ffd400}
+  #start p{margin:0;color:#bbb;line-height:1.8;max-width:460px}
+
+  /* الكاميرا أو الفيديو */
+  #cam{position:fixed;left:0;right:0;top:0;bottom:0;width:100%;height:100%;object-fit:contain;background:#000}
+  #app.filemode #cam{bottom:calc(62px + env(safe-area-inset-bottom));height:auto}
+  #app.nocam:not(.filemode) #cam{visibility:hidden}
+  #app.selecting #cam{visibility:visible}
+  #region{position:fixed;border:2px dashed #ffd400;border-radius:6px;pointer-events:none;z-index:2}
+  #app.nocam:not(.filemode) #region{display:none}
+
+  /* طبقة تحديد المنطقة */
+  #draw{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.3);touch-action:none}
+  #draw .hint{position:absolute;top:calc(14px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:#ffd400;color:#000;font-weight:700;padding:8px 14px;border-radius:12px;text-align:center;width:max-content;max-width:92%}
+  #draw .cancel{position:absolute;bottom:calc(16px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%)}
+  #box{position:absolute;border:3px solid #ffd400;background:rgba(255,212,0,.12);border-radius:6px}
+
+  /* صناديق الترجمة الشفافة */
+  .sub{position:fixed;left:10px;right:10px;z-index:3;background:rgba(0,0,0,.68);border-radius:16px;padding:8px 14px;text-align:center;pointer-events:none;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+  #subV{bottom:calc(70px + env(safe-area-inset-bottom))}
+  #app.filemode #subV{bottom:calc(120px + env(safe-area-inset-bottom))}
+  #subT{top:calc(46px + env(safe-area-inset-top));border:1px solid rgba(255,212,0,.35)}
+  .tag{font-size:.55em;color:#999;margin-bottom:2px}
+  .who{font-weight:800;font-size:.8em}
+  .ar{font-weight:700;line-height:1.55;text-shadow:0 2px 4px #000}
+  .en{direction:ltr;color:#aaa;font-size:.6em;margin-top:4px;line-height:1.4}
+
+  #status{position:fixed;top:calc(8px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:6;background:rgba(0,0,0,.8);border:1px solid #333;padding:6px 12px;border-radius:20px;font-size:13px;max-width:92%;text-align:center;transition:opacity .4s}
+  #status.fade{opacity:0}
+
+  /* الشريط السفلي */
+  #bar{position:fixed;left:0;right:0;bottom:0;z-index:4;display:flex;gap:6px;overflow-x:auto;padding:8px 8px calc(8px + env(safe-area-inset-bottom));background:rgba(0,0,0,.85);align-items:center}
+  #bar select{background:#222;color:#fff;border:1px solid #444;border-radius:12px;padding:8px}
+
+  /* اللوحات */
+  .panel{position:fixed;top:0;bottom:0;right:0;width:min(440px,100%);z-index:15;background:#111;overflow-y:auto;padding:16px 16px calc(24px + env(safe-area-inset-bottom));border-left:1px solid #333}
+  .panel h2{margin:4px 0 12px;font-size:20px;display:flex;justify-content:space-between;align-items:center}
+  .row{display:flex;align-items:center;gap:8px;margin:8px 0;flex-wrap:wrap}
+  .row label{min-width:92px;color:#ccc}
+  .row input[type=range]{flex:1}
+  .row select,.row input[type=text]{flex:1;background:#1c1c1c;color:#fff;border:1px solid #444;border-radius:10px;padding:8px}
+  .char{background:#1a1a1a;border:1px solid #2c2c2c;border-radius:14px;padding:10px;margin-bottom:10px}
+  .dot{width:14px;height:14px;border-radius:50%;display:inline-block}
+  .orig{color:#888;font-size:13px;direction:ltr}
+  .note{color:#999;font-size:13px;line-height:1.7}
+  #cv{width:100%;max-height:160px;object-fit:contain;background:#fff;border-radius:8px;margin-top:6px}
+</style>
+</head>
+<body>
+
+<div id="start">
+  <h1>ترجمان <span>الألعاب</span></h1>
+  <p>وجّه الكاميرا على أي نص في اللعبة ويترجمه على طول، ويسمع كلام الشخصيات ويقوله بالعربي.<br>أو ارفع فيديو من اللعبة فيه صوت وكلام، وشوف ترجمة الصوت وترجمة النص كل وحدة لحالها.</p>
+  <button id="btnCam" class="big">📷 ترجمة بالكاميرا</button>
+  <button id="btnFile" class="big alt">🎬 تجربة على فيديو</button>
+  <input type="file" id="fileIn" accept="video/*" class="hide">
+</div>
+
+<div id="app" class="hide">
+  <video id="cam" playsinline webkit-playsinline muted autoplay></video>
+  <div id="region" class="hide"></div>
+
+  <div id="subT" class="sub hide">
+    <div class="tag">📝 ترجمة النص</div>
+    <div class="who"></div><div class="ar"></div><div class="en"></div>
+  </div>
+  <div id="subV" class="sub hide">
+    <div class="tag">🔊 ترجمة الصوت</div>
+    <div class="who"></div><div class="ar"></div><div class="en"></div>
+  </div>
+
+  <div id="status"></div>
+
+  <div id="bar">
+    <button id="bCam">📷 كاميرا</button>
+    <button id="bFile">🎬 فيديو</button>
+    <button id="bFull">🖥️ كامل الشاشة</button>
+    <button id="bRegion">📐 تحديد</button>
+    <button id="bOcr">📝 النصوص</button>
+    <button id="bVoice">🎤 الأصوات</button>
+    <button id="bSpeak">🔊 النطق</button>
+    <select id="spk" title="المتكلم"></select>
+    <button id="bChars">🎭 الشخصيات</button>
+    <button id="bSet">⚙️ الإعدادات</button>
+  </div>
+
+  <div id="draw" class="hide">
+    <div class="hint">اسحب بإصبعك مربع على مكان الكلام</div>
+    <div id="box" class="hide"></div>
+    <button class="cancel" id="bCancelSel">إلغاء</button>
+  </div>
+
+  <div id="pChars" class="panel hide">
+    <h2>🎭 الشخصيات وأصواتها <button id="xChars">إغلاق</button></h2>
+    <p class="note">كل شخصية لها صوت عربي خاص. إذا ظهر في ترجمة اللعبة «اسم: كلام» تنضاف الشخصية تلقائياً. اختر «المتكلم» من الشريط السفلي عشان الكلام المسموع ينقال بصوته.</p>
+    <div id="charList"></div>
+    <button id="bAddChar">➕ إضافة شخصية</button>
+  </div>
+
+  <div id="pSet" class="panel hide">
+    <h2>⚙️ الإعدادات <button id="xSet">إغلاق</button></h2>
+    <div class="row"><label>مطابقة النبرة</label><input type="checkbox" id="sMatch"> <span class="note">الصوت العربي يقلّد طبقة صوت الشخصية الأصلي</span></div>
+    <div class="row"><label>كتم الإنجليزي</label><input type="checkbox" id="sMute"> <span class="note">يكتم صوت الفيديو وقت ما يتكلم العربي</span></div>
+    <div class="row"><label>سرعة القراءة</label><input type="range" id="sInt" min="600" max="3000" step="100"><span id="vInt"></span></div>
+    <div class="row"><label>لون نص اللعبة</label>
+      <select id="sMode"><option value="white">أبيض</option><option value="yellow">أصفر</option><option value="black">أسود</option><option value="auto">تلقائي</option></select></div>
+    <div class="row"><label>حدّة التنقية</label><input type="range" id="sThr" min="100" max="240" step="5"><span id="vThr"></span></div>
+    <div class="row"><label>حجم الخط</label><input type="range" id="sFont" min="14" max="44" step="1"><span id="vFont"></span></div>
+    <div class="row"><label>النص الأصلي</label><input type="checkbox" id="sEn"> <span class="note">إظهار الإنجليزي تحت الترجمة</span></div>
+    <div class="row"><label>إخفاء الكاميرا</label><input type="checkbox" id="sHide"> <span class="note">شاشة سوداء فيها الترجمة فقط</span></div>
+    <p class="note">هذي الصورة اللي يشوفها قارئ النصوص. «لون نص اللعبة» و«حدّة التنقية» يشتغلون بس لما تحدد مربع.</p>
+    <canvas id="cv"></canvas>
+    <div class="row"><button id="bClear">مسح ذاكرة الترجمات</button><button id="bReset">إعادة كل شي</button></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
