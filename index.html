@@ -4,152 +4,224 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#000000">
+<meta name="theme-color" content="#071a1c">
 <title>ترجمان الألعاب</title>
 <style>
+  :root{--teal:#1fa89a;--teal2:#2fd1bf;--bg:#071a1c;--card:#0f2a2d;--line:#1d4448}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;height:100%;background:#000;color:#fff;font-family:-apple-system,system-ui,"Segoe UI",Tahoma,sans-serif;overflow:hidden}
   .hide{display:none!important}
   button,select,input{font-family:inherit;font-size:15px}
-  button{background:#222;color:#fff;border:1px solid #444;border-radius:12px;padding:9px 12px;white-space:nowrap}
-  button.on{background:#ffd400;color:#000;border-color:#ffd400;font-weight:700}
-  button.big{font-size:19px;padding:15px 26px;background:#ffd400;color:#000;border:0;font-weight:800;border-radius:16px;width:min(320px,90%)}
-  button.big.alt,.big.alt{background:#2b6cff;color:#fff}
-  label.big{display:block;font-size:19px;padding:15px 26px;border:0;font-weight:800;border-radius:16px;width:min(320px,90%);cursor:pointer;-webkit-user-select:none;user-select:none}
-  label.btn{display:inline-block;background:#222;color:#fff;border:1px solid #444;border-radius:12px;padding:9px 12px;white-space:nowrap;cursor:pointer;font-size:15px}
-  label.btn.on{background:#ffd400;color:#000;border-color:#ffd400;font-weight:700}
+  button{background:#16302f;color:#fff;border:1px solid var(--line);border-radius:12px;padding:9px 12px;white-space:nowrap;cursor:pointer}
+  button.on,label.btn.on{background:var(--teal);border-color:var(--teal);color:#fff;font-weight:700}
+  label.btn{display:inline-block;background:#16302f;color:#fff;border:1px solid var(--line);border-radius:12px;padding:9px 12px;white-space:nowrap;cursor:pointer;font-size:15px}
   #fileIn{position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0}
-  #msg{background:#3a0d0d;border:1px solid #ff5b5b;color:#fff;border-radius:14px;padding:12px 14px;max-width:460px;line-height:1.8;font-size:15px}
 
-  /* شاشة البداية */
-  #start{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;text-align:center;background:radial-gradient(circle at 50% 20%,#1d2a4a,#000 70%);overflow:auto}
-  #start h1{margin:0;font-size:34px}
-  #start h1 span{color:#ffd400}
-  #start p{margin:0;color:#bbb;line-height:1.8;max-width:460px}
+  /* الشاشة الرئيسية */
+  #start{position:fixed;inset:0;overflow-y:auto;background:radial-gradient(circle at 50% 0%,#12403f,var(--bg) 60%);padding:calc(18px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom))}
+  .wrap{max-width:460px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+  .logo{text-align:center;font-size:30px;font-weight:900;margin:6px 0 2px}
+  .logo span{color:var(--teal2)}
+  .sub-logo{text-align:center;color:#9bbfbb;font-size:14px;margin-bottom:6px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:12px 14px}
+  .card .lbl{color:#9bbfbb;font-size:13px;margin-bottom:8px}
+  .langs{display:flex;align-items:center;gap:8px}
+  .langs select{flex:1;background:#0a2023;color:#fff;border:1px solid var(--line);border-radius:12px;padding:10px;font-size:16px}
+  .langs span{color:var(--teal2);font-weight:900;font-size:20px}
+  .item{display:flex;justify-content:space-between;align-items:center;width:100%;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:15px 14px;font-size:16px;text-align:right}
+  .item small{color:#9bbfbb;font-size:13px}
+  .steps div{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+  .steps div:last-child{border:0}
+  .steps b{width:24px;height:24px;border-radius:50%;background:#1b3c3e;display:inline-flex;align-items:center;justify-content:center;font-size:13px;flex:none}
+  .sw{display:flex;justify-content:space-between;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:12px 14px;font-size:15px}
+  .sw small{display:block;color:#9bbfbb;font-size:12px;margin-top:2px}
+  .tg{position:relative;width:52px;height:30px;flex:none}
+  .tg input{opacity:0;width:0;height:0;position:absolute}
+  .tg i{position:absolute;inset:0;background:#2a3d3f;border-radius:30px;transition:.2s}
+  .tg i:before{content:"";position:absolute;width:24px;height:24px;top:3px;right:3px;background:#fff;border-radius:50%;transition:.2s}
+  .tg input:checked+i{background:var(--teal)}
+  .tg input:checked+i:before{transform:translateX(-22px)}
+  .big{display:block;width:100%;text-align:center;font-size:20px;padding:16px;border:0;font-weight:800;border-radius:20px;background:linear-gradient(180deg,var(--teal2),var(--teal));color:#fff;box-shadow:0 6px 24px rgba(31,168,154,.35);cursor:pointer}
+  .big.alt{background:#16302f;border:1px solid var(--line);box-shadow:none;font-size:16px;padding:13px}
+  #msg{background:#3a0d0d;border:1px solid #ff5b5b;color:#fff;border-radius:14px;padding:12px 14px;line-height:1.8;font-size:15px}
+  .tip{color:#9bbfbb;font-size:13px;line-height:1.8;text-align:center}
 
   /* الكاميرا أو الفيديو */
   #cam{position:fixed;left:0;right:0;top:0;bottom:0;width:100%;height:100%;object-fit:contain;background:#000}
   #app.filemode #cam{bottom:calc(62px + env(safe-area-inset-bottom));height:auto}
   #app.nocam:not(.filemode) #cam{visibility:hidden}
   #app.selecting #cam{visibility:visible}
-  #region{position:fixed;border:2px dashed #ffd400;border-radius:6px;pointer-events:none;z-index:2}
+  #region{position:fixed;border:2px dashed var(--teal2);border-radius:6px;pointer-events:none;z-index:2}
   #app.nocam:not(.filemode) #region{display:none}
 
-  /* طبقة تحديد المنطقة */
+  /* تحديد المنطقة */
   #draw{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.3);touch-action:none}
-  #draw .hint{position:absolute;top:calc(14px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:#ffd400;color:#000;font-weight:700;padding:8px 14px;border-radius:12px;text-align:center;width:max-content;max-width:92%}
+  #draw .hint{position:absolute;top:calc(14px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:var(--teal);color:#fff;font-weight:700;padding:8px 14px;border-radius:12px;text-align:center;width:max-content;max-width:92%}
   #draw .cancel{position:absolute;bottom:calc(16px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%)}
-  #box{position:absolute;border:3px solid #ffd400;background:rgba(255,212,0,.12);border-radius:6px}
+  #box{position:absolute;border:3px solid var(--teal2);background:rgba(47,209,191,.12);border-radius:6px}
 
-  /* صناديق الترجمة الشفافة */
-  .sub{position:fixed;left:10px;right:10px;z-index:3;background:rgba(0,0,0,.68);border-radius:16px;padding:8px 14px;text-align:center;pointer-events:none;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
-  #subV{bottom:calc(70px + env(safe-area-inset-bottom))}
-  #app.filemode #subV{bottom:calc(120px + env(safe-area-inset-bottom))}
-  #subT{top:calc(46px + env(safe-area-inset-top));border:1px solid rgba(255,212,0,.35)}
-  .tag{font-size:.55em;color:#999;margin-bottom:2px}
+  /* الترجمة الشفافة */
+  #subs{position:fixed;left:10px;right:10px;bottom:calc(66px + env(safe-area-inset-bottom));z-index:3;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+  #app.subtop #subs{top:calc(44px + env(safe-area-inset-top));bottom:auto}
+  #app.filemode #subs{bottom:calc(120px + env(safe-area-inset-bottom))}
+  #app.nocam:not(.filemode) #subs{top:50%;bottom:auto;transform:translateY(-50%)}
+  .sub{border-radius:16px;padding:8px 14px;text-align:center;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+  .tag{font-size:.5em;color:#bbb;margin-bottom:2px}
   .who{font-weight:800;font-size:.8em}
   .ar{font-weight:700;line-height:1.55;text-shadow:0 2px 4px #000}
-  .en{direction:ltr;color:#aaa;font-size:.6em;margin-top:4px;line-height:1.4}
+  .en{direction:ltr;color:#bbb;font-size:.58em;margin-top:4px;line-height:1.4}
 
   #status{position:fixed;top:calc(8px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:6;background:rgba(0,0,0,.8);border:1px solid #333;padding:6px 12px;border-radius:20px;font-size:13px;max-width:92%;text-align:center;transition:opacity .4s}
-  #status.fade{opacity:0}
+  #status.fade,#status:empty{opacity:0}
+  #paused{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:3;background:rgba(0,0,0,.7);border:1px solid var(--line);padding:14px 18px;border-radius:16px;text-align:center;line-height:1.7;pointer-events:none}
 
-  /* الشريط السفلي */
-  #bar{position:fixed;left:0;right:0;bottom:0;z-index:4;display:flex;gap:6px;overflow-x:auto;padding:8px 8px calc(8px + env(safe-area-inset-bottom));background:rgba(0,0,0,.85);align-items:center}
-  #bar select{background:#222;color:#fff;border:1px solid #444;border-radius:12px;padding:8px}
+  #bar{position:fixed;left:0;right:0;bottom:0;z-index:4;display:flex;gap:6px;overflow-x:auto;padding:8px 8px calc(8px + env(safe-area-inset-bottom));background:rgba(4,16,17,.9);align-items:center}
+  #bar select{background:#16302f;color:#fff;border:1px solid var(--line);border-radius:12px;padding:8px}
+  #bRun{font-weight:800}
 
   /* اللوحات */
-  .panel{position:fixed;top:0;bottom:0;right:0;width:min(440px,100%);z-index:15;background:#111;overflow-y:auto;padding:16px 16px calc(24px + env(safe-area-inset-bottom));border-left:1px solid #333}
+  .panel{position:fixed;top:0;bottom:0;right:0;width:min(440px,100%);z-index:30;background:#0b1f21;overflow-y:auto;padding:calc(16px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));border-left:1px solid var(--line)}
   .panel h2{margin:4px 0 12px;font-size:20px;display:flex;justify-content:space-between;align-items:center}
-  .row{display:flex;align-items:center;gap:8px;margin:8px 0;flex-wrap:wrap}
-  .row label{min-width:92px;color:#ccc}
+  .row{display:flex;align-items:center;gap:8px;margin:10px 0;flex-wrap:wrap}
+  .row label{min-width:96px;color:#ccc}
   .row input[type=range]{flex:1}
-  .row select,.row input[type=text]{flex:1;background:#1c1c1c;color:#fff;border:1px solid #444;border-radius:10px;padding:8px}
-  .char{background:#1a1a1a;border:1px solid #2c2c2c;border-radius:14px;padding:10px;margin-bottom:10px}
+  .row select,.row input[type=text]{flex:1;background:#0a2023;color:#fff;border:1px solid var(--line);border-radius:10px;padding:8px}
+  .opt{display:block;width:100%;text-align:right;margin:8px 0;padding:14px;font-size:16px;border-radius:16px;background:var(--card)}
+  .opt small{display:block;color:#9bbfbb;font-size:13px;margin-top:3px;white-space:normal}
+  .char{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;margin-bottom:10px}
   .dot{width:14px;height:14px;border-radius:50%;display:inline-block}
   .orig{color:#888;font-size:13px;direction:ltr}
-  .note{color:#999;font-size:13px;line-height:1.7}
+  .note{color:#9bbfbb;font-size:13px;line-height:1.7}
   #cv{width:100%;max-height:160px;object-fit:contain;background:#fff;border-radius:8px;margin-top:6px}
+  #preview{background:#333 linear-gradient(135deg,#3b4a5a,#1c2530);border-radius:14px;padding:30px 10px 14px;margin:8px 0}
+  #preview .sub{margin:0 auto}
 </style>
 </head>
 <body>
 
+<!-- الشاشة الرئيسية -->
 <div id="start">
-  <h1>ترجمان <span>الألعاب</span></h1>
-  <p>وجّه الكاميرا على أي نص في اللعبة ويترجمه على طول، ويسمع كلام الشخصيات ويقوله بالعربي.<br>أو ارفع فيديو من اللعبة فيه صوت وكلام، وشوف ترجمة الصوت وترجمة النص كل وحدة لحالها.</p>
-  <button id="btnCam" class="big">📷 ترجمة بالكاميرا</button>
-  <label for="fileIn" id="btnFile" class="big alt" role="button">🎬 تجربة على فيديو</label>
-  <input type="file" id="fileIn" accept="video/*">
-  <div id="msg" class="hide"></div>
+  <div class="wrap">
+    <div class="logo">ترجمان <span>الألعاب</span></div>
+    <div class="sub-logo">ترجمة النصوص والأصوات في الألعاب</div>
+
+    <div class="card">
+      <div class="lbl">الترجمة</div>
+      <div class="langs"><span class="lt">من</span><select id="hSrc"></select><span>←</span><select id="hDst"></select></div>
+    </div>
+
+    <button class="item" id="hRegion">📐 تحديد مكان قراءة الترجمة <small id="hRegionV"></small></button>
+    <button class="item" id="hLook">🎨 تخصيص شكل الترجمة <small>‹</small></button>
+    <button class="item" id="hChars">🎭 أصوات الشخصيات <small>‹</small></button>
+
+    <div class="card steps">
+      <div><b>١</b> افتح اللعبة وشغّل ترجمتها الإنجليزية من إعداداتها</div>
+      <div><b>٢</b> ثبّت الجوال قدام التلفزيون والكاميرا على الشاشة</div>
+      <div><b>٣</b> اضغط «ابدأ الترجمة»</div>
+    </div>
+
+    <label class="sw"><span>فلتر النصوص الدخيلة<small>يتجاهل أرقام وكلمات الشاشة اللي مو حوار</small></span><span class="tg"><input type="checkbox" id="hFilter"><i></i></span></label>
+    <label class="sw"><span>نطق الترجمة بصوت<small>كل شخصية بصوت خاص فيها</small></span><span class="tg"><input type="checkbox" id="hSpeak"><i></i></span></label>
+    <label class="sw"><span>سماع أصوات الشخصيات<small>المايك يسمع كلامهم ويترجمه</small></span><span class="tg"><input type="checkbox" id="hVoice"><i></i></span></label>
+
+    <button id="btnCam" class="big">ابدأ الترجمة ←</button>
+    <label for="fileIn" id="btnFile" class="big alt" role="button">🎬 تجربة على فيديو من اللعبة</label>
+    <input type="file" id="fileIn" accept="video/*">
+    <div id="msg" class="hide"></div>
+    <p class="tip">في قوائم البلايستيشن اضغط «إيقاف الترجمة»، ولما ترجع للعبة اضغط «ابدأ الترجمة».</p>
+  </div>
 </div>
 
+<!-- شاشة الترجمة -->
 <div id="app" class="hide">
   <video id="cam" playsinline webkit-playsinline muted autoplay></video>
   <div id="region" class="hide"></div>
+  <div id="paused" class="hide">⏸️ الترجمة موقفة<br><span class="note">اضغط «ابدأ الترجمة» لما ترجع للعبة</span></div>
 
-  <div id="subT" class="sub hide">
-    <div class="tag">📝 ترجمة النص</div>
-    <div class="who"></div><div class="ar"></div><div class="en"></div>
-  </div>
-  <div id="subV" class="sub hide">
-    <div class="tag">🔊 ترجمة الصوت</div>
-    <div class="who"></div><div class="ar"></div><div class="en"></div>
+  <div id="subs">
+    <div id="subV" class="sub hide"><div class="tag">🔊 ترجمة الصوت</div><div class="who"></div><div class="ar"></div><div class="en"></div></div>
+    <div id="subT" class="sub hide"><div class="tag">📝 ترجمة النص</div><div class="who"></div><div class="ar"></div><div class="en"></div></div>
   </div>
 
   <div id="status"></div>
 
   <div id="bar">
-    <button id="bCam">📷 كاميرا</button>
-    <label for="fileIn" id="bFile" class="btn" role="button">🎬 فيديو</label>
-    <button id="bFull">🖥️ كامل الشاشة</button>
-    <button id="bRegion">📐 تحديد</button>
-    <button id="bOcr">📝 النصوص</button>
+    <button id="bHome">🏠 الرئيسية</button>
+    <button id="bRun">⏸️ إيقاف الترجمة</button>
+    <button id="bRegion">📐 المكان</button>
     <button id="bVoice">🎤 الأصوات</button>
     <button id="bSpeak">🔊 النطق</button>
     <select id="spk" title="المتكلم"></select>
     <button id="bChars">🎭 الشخصيات</button>
+    <button id="bLook">🎨 الشكل</button>
     <button id="bSet">⚙️ الإعدادات</button>
+    <button id="bCam">📷 كاميرا</button>
+    <label for="fileIn" id="bFile" class="btn" role="button">🎬 فيديو</label>
   </div>
 
   <div id="draw" class="hide">
-    <div class="hint">اسحب بإصبعك مربع على مكان الكلام</div>
+    <div class="hint">اسحب بإصبعك مربع على مكان كلام الشخصيات</div>
     <div id="box" class="hide"></div>
     <button class="cancel" id="bCancelSel">إلغاء</button>
   </div>
+</div>
 
-  <div id="pChars" class="panel hide">
-    <h2>🎭 الشخصيات وأصواتها <button id="xChars">إغلاق</button></h2>
-    <p class="note">كل شخصية لها صوت عربي خاص. إذا ظهر في ترجمة اللعبة «اسم: كلام» تنضاف الشخصية تلقائياً. اختر «المتكلم» من الشريط السفلي عشان الكلام المسموع ينقال بصوته.</p>
-    <div id="charList"></div>
-    <button id="bAddChar">➕ إضافة شخصية</button>
-  </div>
+<!-- لوحة مكان القراءة -->
+<div id="pRegion" class="panel hide">
+  <h2>📐 مكان قراءة الترجمة <button class="x">إغلاق</button></h2>
+  <p class="note">خلّ التلفزيون كامل داخل الكاميرا، بعدين اختر:</p>
+  <button class="opt" data-r="bottom">⬇️ أسفل الشاشة<small>مكان الترجمة في قراند وأغلب الألعاب</small></button>
+  <button class="opt" data-r="custom">✋ أحدد بنفسي<small>تسحب بإصبعك مربع على مكان الكلام</small></button>
+  <button class="opt" data-r="full">🖥️ الشاشة كاملة<small>يقرأ أي نص يطلع في أي مكان</small></button>
+</div>
 
-  <div id="pSet" class="panel hide">
-    <h2>⚙️ الإعدادات <button id="xSet">إغلاق</button></h2>
-    <div class="row"><label>مطابقة النبرة</label><input type="checkbox" id="sMatch"> <span class="note">الصوت العربي يقلّد طبقة صوت الشخصية الأصلي</span></div>
-    <div class="row"><label>كتم الإنجليزي</label><input type="checkbox" id="sMute"> <span class="note">يكتم صوت الفيديو وقت ما يتكلم العربي</span></div>
-    <div class="row"><label>سرعة القراءة</label><input type="range" id="sInt" min="600" max="3000" step="100"><span id="vInt"></span></div>
-    <div class="row"><label>لون نص اللعبة</label>
-      <select id="sMode"><option value="white">أبيض</option><option value="yellow">أصفر</option><option value="black">أسود</option><option value="auto">تلقائي</option></select></div>
-    <div class="row"><label>حدّة التنقية</label><input type="range" id="sThr" min="100" max="240" step="5"><span id="vThr"></span></div>
-    <div class="row"><label>حجم الخط</label><input type="range" id="sFont" min="14" max="44" step="1"><span id="vFont"></span></div>
-    <div class="row"><label>النص الأصلي</label><input type="checkbox" id="sEn"> <span class="note">إظهار الإنجليزي تحت الترجمة</span></div>
-    <div class="row"><label>إخفاء الكاميرا</label><input type="checkbox" id="sHide"> <span class="note">شاشة سوداء فيها الترجمة فقط</span></div>
-    <p class="note">هذي الصورة اللي يشوفها قارئ النصوص. «لون نص اللعبة» و«حدّة التنقية» يشتغلون بس لما تحدد مربع.</p>
-    <canvas id="cv"></canvas>
-    <div class="row"><button id="bClear">مسح ذاكرة الترجمات</button><button id="bReset">إعادة كل شي</button></div>
-  </div>
+<!-- لوحة شكل الترجمة -->
+<div id="pLook" class="panel hide">
+  <h2>🎨 تخصيص شكل الترجمة <button class="x">إغلاق</button></h2>
+  <div id="preview"><div class="sub" id="pv"><div class="who" style="color:#7fd3ff">جيسون</div><div class="ar">يلا نمشي، الشرطة جاية!</div><div class="en">Let's go, the cops are coming!</div></div></div>
+  <div class="row"><label>حجم الخط</label><input type="range" id="sFont" min="14" max="44" step="1"><span id="vFont"></span></div>
+  <div class="row"><label>لون الترجمة</label>
+    <select id="sColor"><option value="#ffffff">أبيض</option><option value="#ffd400">أصفر</option><option value="#7dffb0">أخضر</option><option value="#7fe7ff">سماوي</option></select></div>
+  <div class="row"><label>غمق الخلفية</label><input type="range" id="sBg" min="0" max="1" step="0.05"><span id="vBg"></span></div>
+  <div class="row"><label>مكان الترجمة</label><select id="sPos"><option value="bottom">تحت</option><option value="top">فوق</option></select></div>
+  <div class="row"><label>النص الأصلي</label><input type="checkbox" id="sEn"> <span class="note">يظهر الإنجليزي تحت الترجمة</span></div>
+  <div class="row"><label>وضع اللوحة</label><input type="checkbox" id="sHide"> <span class="note">الجوال يصير لوحة ترجمة سوداء بخط كبير</span></div>
+  <p class="note">«وضع اللوحة»: حط الجوال على حامل قدامك تحت التلفزيون، الكاميرا الخلفية على التلفزيون والشاشة لك، وتقرأ الترجمة كبيرة تحت اللعبة مباشرة.</p>
+</div>
+
+<!-- لوحة الشخصيات -->
+<div id="pChars" class="panel hide">
+  <h2>🎭 الشخصيات وأصواتها <button class="x">إغلاق</button></h2>
+  <p class="note">كل شخصية لها صوت خاص. إذا ظهر في ترجمة اللعبة «اسم: كلام» تنضاف الشخصية تلقائياً. اختر «المتكلم» من الشريط السفلي عشان الكلام المسموع ينقال بصوته.</p>
+  <div id="charList"></div>
+  <button id="bAddChar">➕ إضافة شخصية</button>
+</div>
+
+<!-- لوحة الإعدادات -->
+<div id="pSet" class="panel hide">
+  <h2>⚙️ الإعدادات <button class="x">إغلاق</button></h2>
+  <div class="row"><label>مطابقة النبرة</label><input type="checkbox" id="sMatch"> <span class="note">الصوت المترجم يقلّد طبقة صوت الشخصية الأصلي</span></div>
+  <div class="row"><label>كتم الأصلي</label><input type="checkbox" id="sMute"> <span class="note">يكتم صوت الفيديو وقت ما ينطق الترجمة</span></div>
+  <div class="row"><label>سرعة القراءة</label><input type="range" id="sInt" min="600" max="3000" step="100"><span id="vInt"></span></div>
+  <div class="row"><label>لون نص اللعبة</label>
+    <select id="sMode"><option value="white">أبيض</option><option value="yellow">أصفر</option><option value="black">أسود</option><option value="auto">تلقائي</option></select></div>
+  <div class="row"><label>حدّة التنقية</label><input type="range" id="sThr" min="100" max="240" step="5"><span id="vThr"></span></div>
+  <p class="note">هذي الصورة اللي يشوفها قارئ النصوص. لازم الكلام يطلع أسود واضح على أبيض، عدّل «لون نص اللعبة» و«حدّة التنقية» لين يوضح.</p>
+  <canvas id="cv"></canvas>
+  <div class="row"><button id="bClear">مسح ذاكرة الترجمات</button><button id="bReset">إعادة كل شي</button></div>
 </div>
 
 <script>
 'use strict';
-/* أي خطأ يطلع على الشاشة بدل ما يوقف الأزرار بصمت */
+/* ترجمان الألعاب — ملف واحد */
+
+/* ---------- أي خطأ يطلع على الشاشة ---------- */
 function showErr(t) {
   try {
     const m = document.getElementById('msg');
-    if (m && !document.getElementById('start').classList.contains('hide')) { m.textContent = t; m.classList.remove('hide'); }
+    if (m && !document.getElementById('start').classList.contains('hide')) { m.textContent = t; m.classList.toggle('hide', !t); }
     const s = document.getElementById('status');
-    if (s) { s.textContent = t; s.classList.remove('fade'); }
+    if (s && t) { s.textContent = t; s.classList.remove('fade'); }
   } catch (e) {}
 }
 window.addEventListener('error', e => showErr('خطأ: ' + (e.message || '')));
@@ -169,20 +241,37 @@ function loadScript(srcs) {
     next(0);
   });
 }
-/* ترجمان الألعاب
-   - قراءة أي نص يظهر في الكاميرا أو الفيديو وترجمته (كامل الشاشة أو مربع محدد)
-   - سماع كلام الشخصيات (بالمايك مع الكاميرا، أو من صوت الفيديو مباشرة) وترجمته ونطقه بالعربي
-   - كل شخصية لها صوت عربي، والنبرة تتطابق مع طبقة صوت الشخصية الأصلي */
 
 const $ = s => document.querySelector(s);
 const video = $('#cam');
 const cv = $('#cv');
 const ctx = cv.getContext('2d', { willReadFrequently: true });
-const KEY = 'tarjuman_v2_';
+const KEY = 'tarjuman_v3_';
+
+/* ---------- اللغات ---------- */
+const SRC = {
+  en: { n: 'الإنجليزية', ocr: 'eng', sr: 'en-US', w: 'english', latin: true },
+  es: { n: 'الإسبانية', ocr: 'spa', sr: 'es-ES', w: 'spanish', latin: true },
+  fr: { n: 'الفرنسية', ocr: 'fra', sr: 'fr-FR', w: 'french', latin: true },
+  de: { n: 'الألمانية', ocr: 'deu', sr: 'de-DE', w: 'german', latin: true },
+  ja: { n: 'اليابانية', ocr: 'jpn', sr: 'ja-JP', w: 'japanese' },
+  ko: { n: 'الكورية', ocr: 'kor', sr: 'ko-KR', w: 'korean' },
+  zh: { n: 'الصينية', ocr: 'chi_sim', sr: 'zh-CN', w: 'chinese' },
+  ru: { n: 'الروسية', ocr: 'rus', sr: 'ru-RU', w: 'russian' }
+};
+const DST = {
+  ar: { n: 'العربية', tts: 'ar-SA' },
+  en: { n: 'الإنجليزية', tts: 'en-US' },
+  fr: { n: 'الفرنسية', tts: 'fr-FR' },
+  es: { n: 'الإسبانية', tts: 'es-ES' },
+  tr: { n: 'التركية', tts: 'tr-TR' },
+  ur: { n: 'الأردية', tts: 'ur-PK' }
+};
 
 /* ---------- الحفظ ---------- */
-const DEF = { region: null, interval: 1200, textMode: 'white', thr: 175, font: 22, showEn: true, hideCam: false,
-  ocrOn: true, voiceOn: false, speakOn: true, speaker: 'jason', match: true, muteOrig: true };
+const DEF = { src: 'en', dst: 'ar', region: { x: .12, y: .76, w: .76, h: .2 }, regionName: 'bottom',
+  interval: 1200, textMode: 'white', thr: 175, font: 22, subColor: '#ffffff', bgOp: 0.65, subPos: 'bottom',
+  showEn: true, hideCam: false, filter: true, voiceOn: false, speakOn: true, speaker: 'jason', match: true, muteOrig: true };
 function load(k) { try { return JSON.parse(localStorage.getItem(KEY + k)); } catch (e) { return null; } }
 function save() {
   try {
@@ -191,6 +280,8 @@ function save() {
   } catch (e) {}
 }
 let S = Object.assign({}, DEF, load('set') || {});
+if (!SRC[S.src]) S.src = 'en';
+if (!DST[S.dst]) S.dst = 'ar';
 let chars = load('chars') || {
   narrator: { key: 'narrator', en: '', ar: 'الراوي', voice: '', gender: 'm', pitch: 1, rate: 1 },
   jason: { key: 'jason', en: 'Jason', ar: 'جيسون', voice: '', gender: 'm', pitch: 0.85, rate: 1 }
@@ -200,6 +291,7 @@ const cache = new Map(Object.entries(load('cache') || {}));
 function saveCache() {
   try { localStorage.setItem(KEY + 'cache', JSON.stringify(Object.fromEntries([...cache.entries()].slice(-500)))); } catch (e) {}
 }
+let running = true;
 
 /* ---------- أدوات ---------- */
 let stTimer = null;
@@ -212,7 +304,7 @@ function status(t, keep) {
 function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 function hash(s) { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) | 0; return Math.abs(h); }
 function color(k) { return k === 'narrator' ? '#ffd400' : `hsl(${hash(k) % 360},85%,65%)`; }
-function norm(s) { return s.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim(); }
+function norm(s) { return s.toLowerCase().replace(/[^\p{L}\p{N} ]/gu, '').replace(/\s+/g, ' ').trim(); }
 function sim(a, b) {
   a = norm(a); b = norm(b);
   if (!a || !b) return 0;
@@ -230,6 +322,35 @@ function sim(a, b) {
 }
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
+/* ---------- الشاشة الرئيسية ---------- */
+function fillHome() {
+  $('#hSrc').innerHTML = Object.entries(SRC).map(([k, v]) => `<option value="${k}"${k === S.src ? ' selected' : ''}>${v.n}</option>`).join('');
+  $('#hDst').innerHTML = Object.entries(DST).map(([k, v]) => `<option value="${k}"${k === S.dst ? ' selected' : ''}>${v.n}</option>`).join('');
+  $('#hRegionV').textContent = { bottom: 'أسفل الشاشة ‹', custom: 'محدد بنفسك ‹', full: 'الشاشة كاملة ‹' }[S.regionName] || '‹';
+  $('#hFilter').checked = S.filter;
+  $('#hSpeak').checked = S.speakOn;
+  $('#hVoice').checked = S.voiceOn;
+}
+$('#hSrc').onchange = e => { S.src = e.target.value; save(); onSrcChange(); };
+$('#hDst').onchange = e => { S.dst = e.target.value; save(); lastDone = ''; };
+$('#hFilter').onchange = e => { S.filter = e.target.checked; save(); };
+$('#hSpeak').onchange = e => { S.speakOn = e.target.checked; save(); updateBtns(); };
+$('#hVoice').onchange = e => { S.voiceOn = e.target.checked; save(); updateBtns(); };
+$('#hRegion').onclick = () => openPanel('#pRegion');
+$('#hLook').onclick = () => { fillLook(); openPanel('#pLook'); };
+$('#hChars').onclick = () => { renderChars(); openPanel('#pChars'); };
+fillHome();
+
+function goHome() {
+  stopRec(); stopSpeak(); stopCam(); resetVideoMode();
+  try { video.pause(); } catch (e) {}
+  mode = null;
+  $('#app').classList.add('hide');
+  $('#start').classList.remove('hide');
+  fillHome();
+}
+$('#bHome').onclick = goHome;
+
 /* ---------- التشغيل ---------- */
 let mode = null, stream = null, fileURL = null;
 function primeTTS() { try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); } catch (e) {} }
@@ -238,7 +359,7 @@ function enterApp() {
   $('#start').classList.add('hide');
   $('#app').classList.remove('hide');
   $('#app').classList.toggle('filemode', mode === 'file');
-  applySettings(); updateBtns(); renderSpk(); keepAwake();
+  applySettings(); setRunning(true); renderSpk(); keepAwake();
   if (!worker && !ocrLoading) initOCR();
   setTimeout(showRegion, 500);
 }
@@ -246,22 +367,20 @@ function stopCam() { if (stream) { stream.getTracks().forEach(t => t.stop()); st
 
 async function startCam() {
   primeTTS();
-  let s;
+  if (mode === 'cam' && stream) { enterApp(); return true; }
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    showErr('المتصفح هذا ما يسمح بالكاميرا. افتح الرابط في «سفاري» نفسه: اضغط زر المشاركة ثم «فتح في سفاري».');
-    return;
+    showErr('المتصفح هذا ما يسمح بالكاميرا. افتح الرابط في «سفاري» نفسه.');
+    return false;
   }
   showErr('');
-  $('#msg').classList.add('hide');
+  let s;
   try {
-    s = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: 'environment' } }, audio: false
-    });
+    s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
   } catch (e) {
     try { s = await navigator.mediaDevices.getUserMedia({ video: true, audio: false }); }
     catch (e2) {
       showErr('ما قدرت أفتح الكاميرا. في الآيفون: الإعدادات ← سفاري ← الكاميرا ← «سماح»، ثم ارجع وحدّث الصفحة.');
-      return;
+      return false;
     }
   }
   resetVideoMode();
@@ -272,7 +391,8 @@ async function startCam() {
   try { await video.play(); } catch (e) {}
   enterApp();
   if (S.voiceOn) startRec();
-  status(S.region ? 'جاهز — يقرأ المربع المحدد' : 'وجّه الكاميرا على أي نص في اللعبة');
+  status('بدأت الترجمة — وجّه الكاميرا على التلفزيون');
+  return true;
 }
 
 async function startFile(file) {
@@ -290,7 +410,6 @@ async function startFile(file) {
 
 $('#btnCam').onclick = startCam;
 $('#bCam').onclick = startCam;
-// زر الفيديو عبارة عن «label» مربوط بخانة الملف، فالآيفون يفتح الاختيار مباشرة
 $('#btnFile').addEventListener('click', primeTTS);
 $('#bFile').addEventListener('click', primeTTS);
 $('#fileIn').addEventListener('change', e => {
@@ -299,12 +418,29 @@ $('#fileIn').addEventListener('change', e => {
   setTimeout(() => { try { e.target.value = ''; } catch (er) {} }, 500);
 });
 
+/* ---------- ابدأ / إيقاف الترجمة ---------- */
+function setRunning(v) {
+  running = v;
+  $('#bRun').textContent = v ? '⏸️ إيقاف الترجمة' : '▶️ ابدأ الترجمة';
+  $('#bRun').classList.toggle('on', !v);
+  $('#paused').classList.toggle('hide', v);
+  if (!v) {
+    stopRec(); stopSpeak();
+    $('#subT').classList.add('hide'); $('#subV').classList.add('hide');
+    if (mode === 'file') video.muted = false;
+  } else {
+    lastDone = ''; pending = '';
+    if (S.voiceOn && mode === 'cam') startRec();
+  }
+  updateBtns();
+}
+$('#bRun').onclick = () => { setRunning(!running); status(running ? 'الترجمة شغالة' : 'الترجمة موقفة'); };
+
 /* ---------- إبقاء الشاشة شغالة ---------- */
-let wl = null;
-async function keepAwake() { try { if ('wakeLock' in navigator) wl = await navigator.wakeLock.request('screen'); } catch (e) {} }
+async function keepAwake() { try { if ('wakeLock' in navigator) await navigator.wakeLock.request('screen'); } catch (e) {} }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') keepAwake(); });
 
-/* ---------- تحديد منطقة (اختياري) ---------- */
+/* ---------- مكان القراءة ---------- */
 let selecting = false, sel = null;
 function contentRect() {
   const vw = video.videoWidth || 16, vh = video.videoHeight || 9;
@@ -354,18 +490,32 @@ draw.addEventListener('pointerup', e => {
   if (r.w < 30 || r.h < 15) { sel = null; box.classList.add('hide'); status('المربع صغير، اسحب مرة ثانية'); return; }
   const x = clamp((r.x - c.x) / c.w, 0, 1), y = clamp((r.y - c.y) / c.h, 0, 1);
   S.region = { x, y, w: clamp((r.x + r.w - c.x) / c.w, 0, 1) - x, h: clamp((r.y + r.h - c.y) / c.h, 0, 1) - y };
+  S.regionName = 'custom';
   save(); endSelect(); showRegion();
   lastDone = ''; pending = '';
-  status('تم — يقرأ المربع المحدد بس');
+  status('تم — يقرأ المربع اللي حددته');
 });
 $('#bCancelSel').onclick = e => { e.stopPropagation(); endSelect(); };
 window.addEventListener('resize', () => setTimeout(showRegion, 300));
 video.addEventListener('loadedmetadata', () => setTimeout(showRegion, 100));
-$('#bRegion').onclick = beginSelect;
-$('#bFull').onclick = () => { S.region = null; save(); showRegion(); lastDone = ''; pending = ''; status('يقرأ أي نص في الشاشة كاملة'); };
+$('#bRegion').onclick = () => openPanel('#pRegion');
+document.querySelectorAll('#pRegion .opt').forEach(b => b.onclick = async () => {
+  const r = b.dataset.r;
+  if (r === 'bottom') { S.region = { x: .12, y: .76, w: .76, h: .2 }; S.regionName = 'bottom'; }
+  if (r === 'full') { S.region = null; S.regionName = 'full'; }
+  save(); fillHome(); lastDone = ''; pending = '';
+  closePanels();
+  if (r === 'custom') {
+    if (!mode) { if (!(await startCam())) return; setTimeout(beginSelect, 700); }
+    else beginSelect();
+    return;
+  }
+  showRegion();
+  if (mode) status(r === 'full' ? 'يقرأ أي نص في الشاشة كاملة' : 'يقرأ أسفل الشاشة');
+});
 
 /* ---------- قراءة النصوص ---------- */
-let worker = null, ocrLoading = false, curPsm = '';
+let worker = null, ocrLoading = false, curPsm = '', ocrLang = '', loopOn = false;
 async function initOCR() {
   ocrLoading = true;
   status('جاري تجهيز قارئ النصوص… أول مرة تاخذ شوي', true);
@@ -376,16 +526,25 @@ async function initOCR() {
         'https://unpkg.com/tesseract.js@5.1.1/dist/tesseract.min.js'
       ]);
     }
-    worker = await Tesseract.createWorker('eng', 1, {
+    const lang = SRC[S.src].ocr;
+    const w = await Tesseract.createWorker(lang, 1, {
       logger: m => { if (m.status && m.status.includes('load') && m.progress) status('تحميل قارئ النصوص ' + Math.round(m.progress * 100) + '٪', true); }
     });
-    await worker.setParameters({ preserve_interword_spaces: '1' });
-    status('قارئ النصوص جاهز ✓');
-    ocrLoop();
+    await w.setParameters({ preserve_interword_spaces: '1' });
+    if (worker) { try { worker.terminate(); } catch (e) {} }
+    worker = w; ocrLang = lang; curPsm = '';
+    status('جاهز ✓ — الترجمة شغالة');
+    if (!loopOn) { loopOn = true; ocrLoop(); }
   } catch (e) {
     status('تعذّر تحميل قارئ النصوص، تأكد من الإنترنت وحدّث الصفحة', true);
   }
   ocrLoading = false;
+}
+function onSrcChange() {
+  lastDone = ''; pending = '';
+  if (rec) { try { rec.abort(); } catch (e) {} rec = null; recOn = false; }
+  asr = null;
+  if (worker && ocrLang !== SRC[S.src].ocr && !ocrLoading) initOCR();
 }
 async function setPsm(p) { if (p !== curPsm) { await worker.setParameters({ tessedit_pageseg_mode: p }); curPsm = p; } }
 
@@ -415,24 +574,39 @@ function grab(full) {
   return true;
 }
 
-function wordsOf(t) { return t.split(' ').filter(w => /[A-Za-z]{2,}/.test(w)).length; }
+function letterCount(t) { return (t.match(/\p{L}/gu) || []).length; }
+function wordsOf(t) {
+  if (!SRC[S.src].latin) return Math.floor(letterCount(t) / 2);
+  return t.split(' ').filter(w => /\p{L}{2,}/u.test(w)).length;
+}
 function clean(raw) {
   let t = String(raw || '').replace(/[|_~`^<>{}\[\]\\@#*=«»]/g, ' ').replace(/\s+/g, ' ').trim();
-  t = t.replace(/^[^A-Za-z"'(]+/, '');
-  const letters = (t.match(/[A-Za-z]/g) || []).length;
-  if (t.length < 3 || letters / t.length < 0.55 || wordsOf(t) < 1) return '';
+  t = t.replace(/^[^\p{L}"'(]+/u, '');
+  if (t.length < 2 || letterCount(t) / t.length < 0.55 || wordsOf(t) < 1) return '';
   return t;
 }
+// فلتر النصوص الدخيلة: يتجاهل الكلام القصير والنصوص الثابتة في الشاشة (مثل القوائم والأرقام)
+const stuck = new Map();
+function intruder(t) {
+  if (!S.filter) return false;
+  if (wordsOf(t) < 3) return true;
+  const k = norm(t).slice(0, 60), now = Date.now();
+  const first = stuck.get(k);
+  if (!first) { stuck.set(k, now); if (stuck.size > 200) stuck.clear(); return false; }
+  return now - first > 25000;
+}
 function extract(data, full) {
-  if (!full) return (data.confidence || 0) >= 45 ? clean(data.text) : '';
-  if (!data.lines) return (data.confidence || 0) >= 55 ? clean(data.text) : '';
+  const minConf = S.filter ? 65 : 45;
+  if (!full) return (data.confidence || 0) >= minConf ? clean(data.text) : '';
+  if (!data.lines) return (data.confidence || 0) >= minConf + 10 ? clean(data.text) : '';
   return data.lines
-    .filter(l => l.confidence >= 60)
+    .filter(l => l.confidence >= minConf + 5)
     .map(l => clean(l.text))
     .filter(t => t && wordsOf(t) >= 2)
     .join(' ').slice(0, 400);
 }
 function splitSpeaker(t) {
+  if (!SRC[S.src].latin) return { name: null, line: t };
   const m = t.match(/^([A-Z][A-Za-z.'\- ]{1,22}?)\s*[:;]\s*(.{2,})$/);
   if (m && m[1].trim().split(/\s+/).length <= 3) return { name: m[1].trim(), line: m[2].trim() };
   return { name: null, line: t };
@@ -440,7 +614,8 @@ function splitSpeaker(t) {
 
 let pending = '', pendingCount = 0, lastDone = '';
 async function ocrLoop() {
-  if (S.ocrOn && worker && video.readyState >= 2 && !selecting && !(mode === 'file' && video.paused && lastDone && pendingCount > 1)) {
+  const busyPaused = mode === 'file' && video.paused && lastDone && pendingCount > 1;
+  if (running && mode && worker && video.readyState >= 2 && !selecting && !busyPaused) {
     try {
       const full = !S.region;
       if (grab(full)) {
@@ -454,11 +629,11 @@ async function ocrLoop() {
 }
 function onOCR(t) {
   if (!t) { pending = ''; pendingCount = 0; return; }
-  // ننتظر النص يثبت (بعض الألعاب تكتب الحروف وحدة وحدة)
   if (sim(t, pending) > 0.9) pendingCount++;
   else { pending = t; pendingCount = 0; return; }
   if (pendingCount !== 1) return;
   if (sim(t, lastDone) > 0.85) return;
+  if (intruder(t)) return;
   lastDone = t;
   const { name, line } = splitSpeaker(t);
   handleLine(line, name ? getChar(name) : chars[S.speaker], 'text');
@@ -467,50 +642,54 @@ function onOCR(t) {
 /* ---------- الترجمة ---------- */
 async function translate(text) {
   const k = text.trim();
-  if (cache.has(k)) return cache.get(k);
+  if (S.src === S.dst) return k;
+  const ck = S.src + '>' + S.dst + ':' + k;
+  if (cache.has(ck)) return cache.get(ck);
   let out = null;
   try {
-    const u = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ar&dt=t&q=' + encodeURIComponent(k);
+    const u = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${S.src === 'zh' ? 'zh-CN' : S.src}&tl=${S.dst}&dt=t&q=` + encodeURIComponent(k);
     const j = await (await fetch(u)).json();
     out = j[0].map(x => x[0]).join('');
   } catch (e) {}
   if (!out) {
     try {
-      const u = 'https://api.mymemory.translated.net/get?langpair=en|ar&q=' + encodeURIComponent(k);
+      const u = `https://api.mymemory.translated.net/get?langpair=${S.src}|${S.dst}&q=` + encodeURIComponent(k);
       const j = await (await fetch(u)).json();
       out = j && j.responseData && j.responseData.translatedText;
     } catch (e) {}
   }
   if (!out) throw new Error('translate');
-  cache.set(k, out); saveCache();
+  cache.set(ck, out); saveCache();
   return out;
 }
 
 /* ---------- عرض الترجمة ---------- */
 const hideT = {};
 function showSub(kind, ch, ar, en) {
+  if (!running) return;
   const el = kind === 'text' ? $('#subT') : $('#subV');
   el.classList.remove('hide');
   const who = el.querySelector('.who');
   who.textContent = ch && ch.key !== 'narrator' ? ch.ar : '';
   who.style.color = ch ? color(ch.key) : '#fff';
   el.querySelector('.ar').textContent = ar;
+  el.querySelector('.ar').dir = S.dst === 'ar' || S.dst === 'ur' ? 'rtl' : 'ltr';
   el.querySelector('.en').textContent = S.showEn ? en : '';
   clearTimeout(hideT[kind]);
   hideT[kind] = setTimeout(() => el.classList.add('hide'), 8000 + ar.length * 60);
 }
 const seqs = { text: 0, voice: 0 };
 async function handleLine(en, ch, kind) {
+  if (!running) return;
   ch = ch || chars.narrator;
   const id = ++seqs[kind];
   showSub(kind, ch, '…', en);
   let ar;
   try { ar = await translate(en); }
   catch (e) { if (id === seqs[kind]) status('الترجمة ما اشتغلت، تأكد من الإنترنت'); return; }
-  if (id !== seqs[kind]) return;
+  if (id !== seqs[kind] || !running) return;
   showSub(kind, ch, ar, en);
   if (!S.speakOn) return;
-  // في وضع الفيديو الصوت العربي للكلام المسموع، والنص يظهر مكتوب بس
   if (kind === 'text' && mode === 'file' && segs.length) return;
   speak(ar, ch);
 }
@@ -528,13 +707,15 @@ function getChar(name) {
   return chars[key];
 }
 
-/* ---------- النطق العربي ---------- */
-const MALE = /maged|tarik|naayf|hamed|shakir|majed|male/i;
-const FEMALE = /laila|mariam|hoda|zeina|salma|amina|female/i;
-function arVoices() { try { return speechSynthesis.getVoices().filter(v => /^ar/i.test(v.lang)); } catch (e) { return []; } }
+/* ---------- النطق ---------- */
+const MALE = /maged|majed|tarik|naayf|hamed|shakir|male|daniel|thomas|jorge|yuri/i;
+const FEMALE = /laila|mariam|hoda|zeina|salma|amina|female|samantha|amelie|monica|milena/i;
+function dstVoices() {
+  try { return speechSynthesis.getVoices().filter(v => v.lang.toLowerCase().startsWith(S.dst)); } catch (e) { return []; }
+}
 if ('speechSynthesis' in window) speechSynthesis.onvoiceschanged = () => { if (!$('#pChars').classList.contains('hide')) renderChars(); };
 function pickVoice(ch) {
-  const vs = arVoices();
+  const vs = dstVoices();
   if (!vs.length) return null;
   if (ch.voice) { const v = vs.find(v => v.voiceURI === ch.voice); if (v) return v; }
   const want = ch.gender === 'm' ? MALE : FEMALE;
@@ -542,11 +723,11 @@ function pickVoice(ch) {
 }
 let speaking = false, spkTok = 0;
 function speak(text, ch, o = {}) {
-  if (!('speechSynthesis' in window)) return;
+  if (!('speechSynthesis' in window) || !running) return;
   const tok = ++spkTok;
   try { speechSynthesis.cancel(); } catch (e) {}
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'ar-SA';
+  u.lang = DST[S.dst].tts;
   const v = pickVoice(ch);
   if (v) { u.voice = v; u.lang = v.lang; }
   u.pitch = o.pitch ?? ch.pitch; u.rate = o.rate ?? ch.rate; u.volume = 1;
@@ -557,11 +738,11 @@ function speak(text, ch, o = {}) {
 }
 function stopSpeak() { spkTok++; speaking = false; try { speechSynthesis.cancel(); } catch (e) {} }
 
-/* ---------- سماع الشخصيات بالمايك (وضع الكاميرا) ---------- */
+/* ---------- سماع الشخصيات بالمايك ---------- */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 let rec = null, recOn = false;
 function startRec() {
-  if (mode !== 'cam') return;
+  if (mode !== 'cam' || !running) return;
   if (!SR) {
     S.voiceOn = false; save(); updateBtns();
     status('سماع الأصوات غير مدعوم هنا — استخدم «سفاري» في الآيفون أو «كروم» في الأندرويد', true);
@@ -569,7 +750,7 @@ function startRec() {
   }
   if (!rec) {
     rec = new SR();
-    rec.lang = 'en-US'; rec.continuous = true; rec.interimResults = true; rec.maxAlternatives = 1;
+    rec.lang = SRC[S.src].sr; rec.continuous = true; rec.interimResults = true; rec.maxAlternatives = 1;
     rec.onstart = () => { recOn = true; };
     rec.onresult = e => {
       let interim = '', fin = '';
@@ -579,7 +760,7 @@ function startRec() {
       }
       if (interim && S.showEn && !speaking) showSub('voice', chars[S.speaker], '🎤 …', interim);
       fin = fin.trim();
-      if (fin && fin.split(/\s+/).length >= 2 && !speaking) handleLine(fin, chars[S.speaker], 'voice');
+      if (fin && letterCount(fin) >= 4 && !speaking) handleLine(fin, chars[S.speaker], 'voice');
     };
     rec.onerror = e => {
       if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
@@ -591,24 +772,26 @@ function startRec() {
   }
   tryStart();
 }
-function tryStart() { if (rec && !recOn && S.voiceOn && !speaking && mode === 'cam') { try { rec.start(); recOn = true; } catch (e) {} } }
+function tryStart() { if (rec && !recOn && S.voiceOn && !speaking && running && mode === 'cam') { try { rec.start(); recOn = true; } catch (e) {} } }
 function pauseRec() { if (rec && recOn) { try { rec.abort(); } catch (e) {} } }
 function resumeRec() { setTimeout(tryStart, 350); }
 function stopRec() { if (rec) { try { rec.abort(); } catch (e) {} } recOn = false; }
 
 /* ---------- وضع الفيديو: سماع الصوت من الفيديو نفسه ---------- */
-let segs = [], curSeg = -1, asr = null, prepTok = 0;
+let segs = [], curSeg = -1, asr = null, asrKey = '', prepTok = 0;
 
 async function loadASR() {
-  if (asr) return asr;
+  const model = S.src === 'en' ? 'Xenova/whisper-tiny.en' : 'Xenova/whisper-tiny';
+  if (asr && asrKey === model) return asr;
   let T;
   try { T = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.0'); }
   catch (e) { T = await import('https://unpkg.com/@huggingface/transformers@3.7.0/dist/transformers.min.js'); }
-  asr = await T.pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny.en', {
+  asr = await T.pipeline('automatic-speech-recognition', model, {
     progress_callback: p => {
       if (p.status === 'progress' && p.total > 2e6) status('تحميل نموذج سماع الكلام ' + Math.round(p.progress) + '٪ (أول مرة بس)', true);
     }
   });
+  asrKey = model;
   return asr;
 }
 
@@ -633,7 +816,7 @@ async function fileToPCM(file) {
   return out;
 }
 
-// تقدير طبقة صوت المتكلم الأصلي (بالهرتز)
+// تقدير طبقة صوت المتكلم الأصلي
 function estimateF0(x, sr) {
   const frame = 1024, minLag = Math.floor(sr / 400), maxLag = Math.floor(sr / 70), f0s = [];
   for (let p = 0; p + frame + maxLag < x.length; p += 1024) {
@@ -652,10 +835,7 @@ function estimateF0(x, sr) {
   f0s.sort((a, b) => a - b);
   return f0s[f0s.length >> 1];
 }
-
-function cleanSpeech(t) {
-  return String(t || '').replace(/\[[^\]]*\]|\([^)]*\)|\*[^*]*\*|♪/g, ' ').replace(/\s+/g, ' ').trim();
-}
+function cleanSpeech(t) { return String(t || '').replace(/\[[^\]]*\]|\([^)]*\)|\*[^*]*\*|♪/g, ' ').replace(/\s+/g, ' ').trim(); }
 
 async function prepareVoice(file) {
   const tok = ++prepTok;
@@ -669,7 +849,9 @@ async function prepareVoice(file) {
     const model = await loadASR();
     if (tok !== prepTok) return;
     status('أسمع كلام الشخصيات في الفيديو… لا تقفل الصفحة', true);
-    const r = await model(pcm, { return_timestamps: true, chunk_length_s: 30, stride_length_s: 5 });
+    const opts = { return_timestamps: true, chunk_length_s: 30, stride_length_s: 5 };
+    if (S.src !== 'en') { opts.language = SRC[S.src].w; opts.task = 'transcribe'; }
+    const r = await model(pcm, opts);
     if (tok !== prepTok) return;
     const chunks = (r.chunks && r.chunks.length) ? r.chunks : [{ timestamp: [0, secs], text: r.text }];
     const list = chunks.map(c => {
@@ -677,8 +859,8 @@ async function prepareVoice(file) {
       let en = c.timestamp && c.timestamp[1] != null ? c.timestamp[1] : st + 3;
       if (en <= st) en = st + 2;
       return { start: st, end: en, en: cleanSpeech(c.text) };
-    }).filter(s => s.en && /[a-z]{2,}/i.test(s.en));
-    if (!list.length) { status('ما لقيت كلام إنجليزي في صوت الفيديو', true); return; }
+    }).filter(s => s.en && letterCount(s.en) >= 2);
+    if (!list.length) { status('ما لقيت كلام في صوت الفيديو', true); return; }
     for (let i = 0; i < list.length; i++) {
       if (tok !== prepTok) return;
       status(`أترجم كلام الشخصيات ${i + 1} من ${list.length}`, true);
@@ -692,7 +874,6 @@ async function prepareVoice(file) {
     if (tok === prepTok) status('ما قدرت أقرأ صوت هذا الفيديو، جرب مقطع ثاني أو تأكد من الإنترنت', true);
   }
 }
-
 function playSeg(s) {
   const ch = chars[S.speaker] || chars.narrator;
   showSub('voice', ch, s.ar, s.en);
@@ -711,7 +892,7 @@ function resetVideoMode() {
   video.muted = mode === 'cam';
 }
 function syncTick() {
-  if (mode === 'file' && segs.length && !video.paused) {
+  if (mode === 'file' && running && segs.length && !video.paused) {
     const t = video.currentTime;
     const i = segs.findIndex(s => t >= s.start && t < s.end);
     if (i !== -1 && i !== curSeg) { curSeg = i; playSeg(segs[i]); }
@@ -725,16 +906,11 @@ video.addEventListener('ended', () => { if (mode === 'file') video.muted = false
 
 /* ---------- الأزرار ---------- */
 function updateBtns() {
-  $('#bOcr').classList.toggle('on', S.ocrOn);
   $('#bVoice').classList.toggle('on', S.voiceOn && mode === 'cam');
   $('#bSpeak').classList.toggle('on', S.speakOn);
   $('#bCam').classList.toggle('on', mode === 'cam');
   $('#bFile').classList.toggle('on', mode === 'file');
 }
-$('#bOcr').onclick = () => {
-  S.ocrOn = !S.ocrOn; save(); updateBtns();
-  status(S.ocrOn ? 'قراءة النصوص شغالة' : 'قراءة النصوص طافية');
-};
 $('#bVoice').onclick = () => {
   if (mode === 'file') { status('في وضع الفيديو الصوت ينسمع ويترجم تلقائياً من الفيديو نفسه'); return; }
   S.voiceOn = !S.voiceOn; save(); updateBtns();
@@ -744,7 +920,7 @@ $('#bVoice').onclick = () => {
 $('#bSpeak').onclick = () => {
   S.speakOn = !S.speakOn; save(); updateBtns();
   if (!S.speakOn) { stopSpeak(); if (mode === 'file') video.muted = false; }
-  status(S.speakOn ? 'النطق العربي شغال' : 'النطق العربي طافي');
+  status(S.speakOn ? 'النطق شغال' : 'النطق طافي');
 };
 $('#spk').onchange = e => { S.speaker = e.target.value; save(); status('المتكلم الحين: ' + chars[S.speaker].ar); };
 function renderSpk() {
@@ -753,14 +929,15 @@ function renderSpk() {
 }
 
 /* ---------- اللوحات ---------- */
-function closePanels() { $('#pChars').classList.add('hide'); $('#pSet').classList.add('hide'); }
-$('#bChars').onclick = () => { closePanels(); renderChars(); $('#pChars').classList.remove('hide'); };
-$('#bSet').onclick = () => { closePanels(); fillSettings(); $('#pSet').classList.remove('hide'); };
-$('#xChars').onclick = closePanels;
-$('#xSet').onclick = closePanels;
+function closePanels() { document.querySelectorAll('.panel').forEach(p => p.classList.add('hide')); }
+function openPanel(id) { closePanels(); $(id).classList.remove('hide'); }
+document.querySelectorAll('.panel .x').forEach(b => b.onclick = () => { closePanels(); fillHome(); });
+$('#bChars').onclick = () => { renderChars(); openPanel('#pChars'); };
+$('#bSet').onclick = () => { fillSettings(); openPanel('#pSet'); };
+$('#bLook').onclick = () => { fillLook(); openPanel('#pLook'); };
 
 function renderChars() {
-  const list = $('#charList'), vs = arVoices();
+  const list = $('#charList'), vs = dstVoices();
   list.innerHTML = '';
   Object.values(chars).forEach(ch => {
     const d = document.createElement('div');
@@ -769,7 +946,7 @@ function renderChars() {
       <div class="row"><span class="dot" style="background:${color(ch.key)}"></span>
         <input type="text" class="nm" value="${esc(ch.ar)}">
         <button class="t">▶️ تجربة</button>
-        ${ch.key !== 'narrator' ? '<button class="x">🗑️</button>' : ''}</div>
+        ${ch.key !== 'narrator' ? '<button class="del">🗑️</button>' : ''}</div>
       ${ch.en ? `<div class="orig">${esc(ch.en)}</div>` : ''}
       <div class="row"><label>النوع</label>
         <select class="gd">
@@ -792,16 +969,20 @@ function renderChars() {
     d.querySelector('.vc').onchange = e => { ch.voice = e.target.value; save(); };
     d.querySelector('.pt').oninput = e => { ch.pitch = +e.target.value; save(); };
     d.querySelector('.rt').oninput = e => { ch.rate = +e.target.value; save(); };
-    d.querySelector('.t').onclick = () => speak('أهلاً، أنا ' + ch.ar + '. هذا صوتي في الترجمة.', ch);
-    const x = d.querySelector('.x');
-    if (x) x.onclick = () => {
+    d.querySelector('.t').onclick = () => {
+      const was = running; running = true;
+      speak(S.dst === 'ar' ? 'أهلاً، أنا ' + ch.ar + '. هذا صوتي في الترجمة.' : ch.ar, ch);
+      running = was;
+    };
+    const del = d.querySelector('.del');
+    if (del) del.onclick = () => {
       if (!confirm('تحذف ' + ch.ar + '؟')) return;
       delete chars[ch.key]; if (S.speaker === ch.key) S.speaker = 'narrator';
       save(); renderChars(); renderSpk();
     };
     list.appendChild(d);
   });
-  if (!vs.length) list.insertAdjacentHTML('afterbegin', '<p class="note">ما لقيت أصوات عربية في جوالك. في الآيفون: الإعدادات ← تسهيلات الاستخدام ← المحتوى المنطوق ← الأصوات ← العربية، ونزّل صوت «ماجد».</p>');
+  if (!vs.length && S.dst === 'ar') list.insertAdjacentHTML('afterbegin', '<p class="note">ما لقيت أصوات عربية في جوالك. في الآيفون: الإعدادات ← تسهيلات الاستخدام ← المحتوى المنطوق ← الأصوات ← العربية، ونزّل صوت «ماجد».</p>');
 }
 $('#bAddChar').onclick = () => {
   const n = prompt('اكتب اسم الشخصية مثل ما يطلع في ترجمة اللعبة (بالإنجليزي):');
@@ -809,34 +990,54 @@ $('#bAddChar').onclick = () => {
   getChar(n.trim()); renderChars();
 };
 
-/* ---------- الإعدادات ---------- */
-function applySettings() {
-  document.querySelectorAll('.sub').forEach(el => el.style.fontSize = S.font + 'px');
-  $('#app').classList.toggle('nocam', S.hideCam);
+/* ---------- شكل الترجمة ---------- */
+function styleSub(el, scale) {
+  el.style.fontSize = Math.round(S.font * scale) + 'px';
+  el.style.background = `rgba(0,0,0,${S.bgOp})`;
+  el.querySelector('.ar').style.color = S.subColor;
 }
+function applySettings() {
+  const scale = S.hideCam && mode !== 'file' ? 1.45 : 1;
+  document.querySelectorAll('#subs .sub').forEach(el => styleSub(el, scale));
+  styleSub($('#pv'), 1);
+  $('#app').classList.toggle('nocam', S.hideCam);
+  $('#app').classList.toggle('subtop', S.subPos === 'top');
+}
+function fillLook() {
+  $('#sFont').value = S.font; $('#vFont').textContent = S.font;
+  $('#sColor').value = S.subColor;
+  $('#sBg').value = S.bgOp; $('#vBg').textContent = Math.round(S.bgOp * 100) + '٪';
+  $('#sPos').value = S.subPos;
+  $('#sEn').checked = S.showEn; $('#sHide').checked = S.hideCam;
+  $('#pv .en').style.display = S.showEn ? '' : 'none';
+  applySettings();
+}
+$('#sFont').oninput = e => { S.font = +e.target.value; save(); fillLook(); };
+$('#sColor').onchange = e => { S.subColor = e.target.value; save(); fillLook(); };
+$('#sBg').oninput = e => { S.bgOp = +e.target.value; save(); fillLook(); };
+$('#sPos').onchange = e => { S.subPos = e.target.value; save(); fillLook(); };
+$('#sEn').onchange = e => { S.showEn = e.target.checked; save(); fillLook(); };
+$('#sHide').onchange = e => { S.hideCam = e.target.checked; save(); fillLook(); };
+
+/* ---------- الإعدادات ---------- */
 function fillSettings() {
   $('#sMatch').checked = S.match; $('#sMute').checked = S.muteOrig;
   $('#sInt').value = S.interval; $('#vInt').textContent = (S.interval / 1000).toFixed(1) + ' ث';
   $('#sMode').value = S.textMode;
   $('#sThr').value = S.thr; $('#vThr').textContent = S.thr;
-  $('#sFont').value = S.font; $('#vFont').textContent = S.font;
-  $('#sEn').checked = S.showEn; $('#sHide').checked = S.hideCam;
 }
 $('#sMatch').onchange = e => { S.match = e.target.checked; save(); };
 $('#sMute').onchange = e => { S.muteOrig = e.target.checked; save(); };
 $('#sInt').oninput = e => { S.interval = +e.target.value; $('#vInt').textContent = (S.interval / 1000).toFixed(1) + ' ث'; save(); };
 $('#sMode').onchange = e => { S.textMode = e.target.value; save(); };
 $('#sThr').oninput = e => { S.thr = +e.target.value; $('#vThr').textContent = S.thr; save(); };
-$('#sFont').oninput = e => { S.font = +e.target.value; $('#vFont').textContent = S.font; save(); applySettings(); };
-$('#sEn').onchange = e => { S.showEn = e.target.checked; save(); };
-$('#sHide').onchange = e => { S.hideCam = e.target.checked; save(); applySettings(); };
-$('#bClear').onclick = () => { cache.clear(); saveCache(); lastDone = ''; status('انمسحت ذاكرة الترجمات'); };
+$('#bClear').onclick = () => { cache.clear(); saveCache(); stuck.clear(); lastDone = ''; status('انمسحت ذاكرة الترجمات'); };
 $('#bReset').onclick = () => {
   if (!confirm('ترجّع كل الإعدادات والشخصيات للبداية؟')) return;
   ['set', 'chars', 'cache'].forEach(k => { try { localStorage.removeItem(KEY + k); } catch (e) {} });
   location.reload();
 };
-
+applySettings();
 </script>
 </body>
 </html>
