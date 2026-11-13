@@ -88,6 +88,13 @@
   .row select,.row input[type=text]{flex:1;background:#0a2023;color:#fff;border:1px solid var(--line);border-radius:10px;padding:8px}
   .opt{display:block;width:100%;text-align:right;margin:8px 0;padding:14px;font-size:16px;border-radius:16px;background:var(--card)}
   .opt small{display:block;color:#9bbfbb;font-size:13px;margin-top:3px;white-space:normal}
+  .clip{display:flex;gap:10px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:8px;margin:8px 0;cursor:pointer}
+  .clip img,.clip .ph{width:96px;height:60px;object-fit:cover;border-radius:10px;background:#000;flex:none;display:flex;align-items:center;justify-content:center;font-size:24px}
+  .clip .in{flex:1;min-width:0}
+  .clip .in b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .clip .in small{color:#9bbfbb;font-size:12px}
+  .clip .del{padding:8px 10px;flex:none}
+  .addclip{display:block;text-align:center;background:var(--teal);color:#fff;font-weight:800;border-radius:16px;padding:14px;font-size:16px;cursor:pointer}
   .char{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;margin-bottom:10px}
   .dot{width:14px;height:14px;border-radius:50%;display:inline-block}
   .orig{color:#888;font-size:13px;direction:ltr}
@@ -125,7 +132,7 @@
     <label class="sw"><span>سماع أصوات الشخصيات<small>المايك يسمع كلامهم ويترجمه</small></span><span class="tg"><input type="checkbox" id="hVoice"><i></i></span></label>
 
     <button id="btnCam" class="big">ابدأ الترجمة ←</button>
-    <label for="fileIn" id="btnFile" class="big alt" role="button">🎬 تجربة على فيديو من اللعبة</label>
+    <button id="btnFile" class="big alt">🎞️ اللقطات</button>
     <input type="file" id="fileIn" accept="video/*">
     <div id="msg" class="hide"></div>
     <p class="tip">في قوائم البلايستيشن اضغط «إيقاف الترجمة»، ولما ترجع للعبة اضغط «ابدأ الترجمة».</p>
@@ -156,7 +163,8 @@
     <button id="bLook">🎨 الشكل</button>
     <button id="bSet">⚙️ الإعدادات</button>
     <button id="bCam">📷 كاميرا</button>
-    <label for="fileIn" id="bFile" class="btn" role="button">🎬 فيديو</label>
+    <button id="bFs">⛶ ملء الشاشة</button>
+    <button id="bFile">🎞️ اللقطات</button>
   </div>
 
   <div id="draw" class="hide">
@@ -189,6 +197,14 @@
   <p class="note">«وضع اللوحة»: حط الجوال على حامل قدامك تحت التلفزيون، الكاميرا الخلفية على التلفزيون والشاشة لك، وتقرأ الترجمة كبيرة تحت اللعبة مباشرة.</p>
 </div>
 
+<!-- لوحة اللقطات -->
+<div id="pClips" class="panel hide">
+  <h2>🎞️ اللقطات <button class="x">إغلاق</button></h2>
+  <p class="note">ضيف لقطة من ألعابك فيها كلام وترجمة، واضغطها عشان تشتغل وتترجم الصوت والنصوص. اللقطات تنحفظ هنا وترجع لها متى ما بغيت.</p>
+  <label for="fileIn" class="addclip" id="bAddClip" role="button">➕ إضافة لقطة</label>
+  <div id="clipList"></div>
+</div>
+
 <!-- لوحة الشخصيات -->
 <div id="pChars" class="panel hide">
   <h2>🎭 الشخصيات وأصواتها <button class="x">إغلاق</button></h2>
@@ -200,6 +216,8 @@
 <!-- لوحة الإعدادات -->
 <div id="pSet" class="panel hide">
   <h2>⚙️ الإعدادات <button class="x">إغلاق</button></h2>
+  <div class="row"><label>مصدر الصورة</label><select id="sCamSrc"><option value="">الكاميرا الخلفية</option></select></div>
+  <p class="note">إذا وصلت كرت التقاط بالجهاز، اختره من هنا وتطلع صورة البلايستيشن نفسها بدل الكاميرا.</p>
   <div class="row"><label>مطابقة النبرة</label><input type="checkbox" id="sMatch"> <span class="note">الصوت المترجم يقلّد طبقة صوت الشخصية الأصلي</span></div>
   <div class="row"><label>كتم الأصلي</label><input type="checkbox" id="sMute"> <span class="note">يكتم صوت الفيديو وقت ما ينطق الترجمة</span></div>
   <div class="row"><label>سرعة القراءة</label><input type="range" id="sInt" min="600" max="3000" step="100"><span id="vInt"></span></div>
@@ -375,7 +393,9 @@ async function startCam() {
   showErr('');
   let s;
   try {
-    s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
+    const vc = S.camId ? { deviceId: { exact: S.camId }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+                       : { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } };
+    s = await navigator.mediaDevices.getUserMedia({ video: vc, audio: false });
   } catch (e) {
     try { s = await navigator.mediaDevices.getUserMedia({ video: true, audio: false }); }
     catch (e2) {
@@ -390,12 +410,13 @@ async function startCam() {
   video.muted = true; video.controls = false;
   try { await video.play(); } catch (e) {}
   enterApp();
+  listCams();
   if (S.voiceOn) startRec();
   status('بدأت الترجمة — وجّه الكاميرا على التلفزيون');
   return true;
 }
 
-async function startFile(file) {
+async function startFile(file, rec) {
   if (!file) return;
   primeTTS();
   stopRec(); stopCam(); resetVideoMode();
@@ -405,18 +426,132 @@ async function startFile(file) {
   video.srcObject = null; video.src = fileURL;
   video.muted = false; video.controls = true; video.autoplay = false;
   enterApp();
-  prepareVoice(file);
+  prepareVoice(file, rec);
 }
 
+async function listCams() {
+  try {
+    const ds = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
+    $('#sCamSrc').innerHTML = '<option value="">الكاميرا الخلفية</option>' +
+      ds.map((d, i) => `<option value="${esc(d.deviceId)}"${d.deviceId === S.camId ? ' selected' : ''}>${esc(d.label || ('مصدر ' + (i + 1)))}</option>`).join('');
+  } catch (e) {}
+}
+$('#sCamSrc').onchange = async e => {
+  S.camId = e.target.value; save();
+  if (mode === 'cam') { stopRec(); stopCam(); mode = null; await startCam(); }
+};
+$('#bFs').onclick = () => {
+  const el = document.documentElement;
+  try {
+    if (document.fullscreenElement || document.webkitFullscreenElement) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    else (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+  } catch (e) { status('ملء الشاشة غير مدعوم في هذا الجهاز'); }
+};
 $('#btnCam').onclick = startCam;
 $('#bCam').onclick = startCam;
-$('#btnFile').addEventListener('click', primeTTS);
-$('#bFile').addEventListener('click', primeTTS);
-$('#fileIn').addEventListener('change', e => {
+$('#btnFile').onclick = () => { primeTTS(); openClips(); };
+$('#bFile').onclick = () => { primeTTS(); openClips(); };
+$('#bAddClip').addEventListener('click', primeTTS);
+$('#fileIn').addEventListener('change', async e => {
   const f = e.target.files && e.target.files[0];
-  if (f) startFile(f).catch(er => showErr('ما قدرت أفتح الفيديو: ' + (er.message || '')));
   setTimeout(() => { try { e.target.value = ''; } catch (er) {} }, 500);
+  if (!f) return;
+  closePanels();
+  let rec = null;
+  try {
+    rec = { id: Date.now().toString(36), name: (f.name || 'لقطة').replace(/\.[^.]+$/, ''), date: Date.now(), blob: f, thumb: '' };
+    rec.thumb = await makeThumb(f);
+    await dbPut('clips', rec);
+  } catch (er) { rec = null; status('ما قدرت أحفظ اللقطة، بس بتشتغل الحين'); }
+  startFile(f, rec).catch(er => showErr('ما قدرت أفتح الفيديو: ' + (er.message || '')));
 });
+
+/* ---------- مكتبة اللقطات ---------- */
+let dbP = null;
+function db() {
+  if (dbP) return dbP;
+  dbP = new Promise((res, rej) => {
+    const r = indexedDB.open('tarjuman_clips', 1);
+    r.onupgradeneeded = () => {
+      r.result.createObjectStore('clips', { keyPath: 'id' });
+      r.result.createObjectStore('segs', { keyPath: 'k' });
+    };
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => { dbP = null; rej(r.error); };
+  });
+  return dbP;
+}
+async function dbReq(store, mode, fn) {
+  const d = await db();
+  return new Promise((res, rej) => {
+    const t = d.transaction(store, mode);
+    const q = fn(t.objectStore(store));
+    let out;
+    if (q) q.onsuccess = () => { out = q.result; };
+    t.oncomplete = () => res(out);
+    t.onerror = () => rej(t.error);
+    t.onabort = () => rej(t.error);
+  });
+}
+const dbPut = (s, v) => dbReq(s, 'readwrite', st => st.put(v));
+const dbGet = (s, k) => dbReq(s, 'readonly', st => st.get(k));
+const dbDel = (s, k) => dbReq(s, 'readwrite', st => st.delete(k));
+const dbKeys = s => dbReq(s, 'readonly', st => st.getAllKeys());
+
+function makeThumb(file) {
+  return new Promise(res => {
+    const v = document.createElement('video');
+    const u = URL.createObjectURL(file);
+    let done = false;
+    const fin = t => { if (done) return; done = true; try { URL.revokeObjectURL(u); } catch (e) {} res(t || ''); };
+    v.muted = true; v.playsInline = true; v.preload = 'auto'; v.src = u;
+    v.onloadeddata = () => { try { v.currentTime = Math.min(1.5, (v.duration || 3) / 3); } catch (e) { fin(''); } };
+    v.onseeked = () => {
+      try {
+        const c = document.createElement('canvas');
+        c.width = 192; c.height = Math.round(192 * (v.videoHeight || 9) / (v.videoWidth || 16));
+        c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+        fin(c.toDataURL('image/jpeg', 0.7));
+      } catch (e) { fin(''); }
+    };
+    v.onerror = () => fin('');
+    setTimeout(() => fin(''), 6000);
+  });
+}
+
+async function openClips() {
+  openPanel('#pClips');
+  const list = $('#clipList');
+  list.innerHTML = '<p class="note">جاري التحميل…</p>';
+  let keys = [];
+  try { keys = await dbKeys('clips'); } catch (e) {}
+  if (!keys.length) { list.innerHTML = '<p class="note">ما فيه لقطات للحين. اضغط «إضافة لقطة» واختر فيديو من الصور.</p>'; return; }
+  list.innerHTML = '';
+  keys.sort().reverse();
+  for (const k of keys) {
+    let r;
+    try { r = await dbGet('clips', k); } catch (e) { continue; }
+    if (!r) continue;
+    const d = document.createElement('div');
+    d.className = 'clip';
+    const when = new Date(r.date).toLocaleDateString('ar-SA', { day: 'numeric', month: 'long' });
+    const mb = r.blob && r.blob.size ? Math.max(1, Math.round(r.blob.size / 1048576)) + ' ميقا' : '';
+    d.innerHTML = (r.thumb ? `<img src="${r.thumb}" alt="">` : '<div class="ph">🎬</div>') +
+      `<div class="in"><b>${esc(r.name)}</b><small>${esc(when)} · ${mb}</small></div><button class="del">🗑️</button>`;
+    d.onclick = ev => {
+      if (ev.target.closest('.del')) return;
+      closePanels();
+      startFile(r.blob, r).catch(er => showErr('ما قدرت أفتح اللقطة: ' + (er.message || '')));
+    };
+    d.querySelector('.del').onclick = async () => {
+      if (!confirm('تحذف اللقطة «' + r.name + '»؟')) return;
+      try { await dbDel('clips', r.id); } catch (e) {}
+      try { for (const sk of await dbKeys('segs')) if (String(sk).startsWith(r.id + ':')) await dbDel('segs', sk); } catch (e) {}
+      openClips();
+    };
+    list.appendChild(d);
+  }
+}
 
 /* ---------- ابدأ / إيقاف الترجمة ---------- */
 function setRunning(v) {
@@ -837,9 +972,21 @@ function estimateF0(x, sr) {
 }
 function cleanSpeech(t) { return String(t || '').replace(/\[[^\]]*\]|\([^)]*\)|\*[^*]*\*|♪/g, ' ').replace(/\s+/g, ' ').trim(); }
 
-async function prepareVoice(file) {
+async function prepareVoice(file, rec) {
   const tok = ++prepTok;
   segs = []; curSeg = -1;
+  const sk = rec ? rec.id + ':' + S.src + '>' + S.dst : null;
+  if (sk) {
+    try {
+      const c = await dbGet('segs', sk);
+      if (tok !== prepTok) return;
+      if (c && c.segs) {
+        segs = c.segs;
+        status(segs.length ? `جاهز ✓ ${segs.length} جملة مترجمة من الصوت — شغّل اللقطة` : 'ما فيه كلام في صوت هذي اللقطة', true);
+        return;
+      }
+    } catch (e) {}
+  }
   try {
     status('أستخرج الصوت من الفيديو…', true);
     const pcm = await fileToPCM(file);
@@ -860,7 +1007,10 @@ async function prepareVoice(file) {
       if (en <= st) en = st + 2;
       return { start: st, end: en, en: cleanSpeech(c.text) };
     }).filter(s => s.en && letterCount(s.en) >= 2);
-    if (!list.length) { status('ما لقيت كلام في صوت الفيديو', true); return; }
+    if (!list.length) {
+      if (sk) { try { await dbPut('segs', { k: sk, segs: [] }); } catch (e) {} }
+      status('ما لقيت كلام بلغة «' + SRC[S.src].n + '» في صوت الفيديو', true); return;
+    }
     for (let i = 0; i < list.length; i++) {
       if (tok !== prepTok) return;
       status(`أترجم كلام الشخصيات ${i + 1} من ${list.length}`, true);
@@ -869,6 +1019,7 @@ async function prepareVoice(file) {
       try { s.ar = await translate(s.en); } catch (e) { s.ar = ''; }
     }
     segs = list.filter(s => s.ar);
+    if (sk) { try { await dbPut('segs', { k: sk, segs }); } catch (e) {} }
     status(`جاهز ✓ ترجمت ${segs.length} جملة من الصوت — شغّل الفيديو`, true);
   } catch (e) {
     if (tok === prepTok) status('ما قدرت أقرأ صوت هذا الفيديو، جرب مقطع ثاني أو تأكد من الإنترنت', true);
