@@ -1,0 +1,924 @@
+name: بناء تطبيق ترجمان الألعاب
+
+on:
+  push:
+    paths:
+      - '.github/workflows/apk.yml'
+      - '.github/workflows/apk.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: تجهيز جافا
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: تجهيز قريدل
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: كتابة ملفات التطبيق
+        run: |
+          mkdir -p app app/src/main app/src/main/java/com/tarjuman/app app/src/main/res/drawable app/src/main/res/mipmap-anydpi-v26 app/src/main/res/values
+          cat > app/build.gradle <<'__END__'
+          plugins {
+              id 'com.android.application'
+          }
+
+          android {
+              namespace 'com.tarjuman.app'
+              compileSdk 34
+
+              defaultConfig {
+                  applicationId 'com.tarjuman.app'
+                  minSdk 26
+                  targetSdk 34
+                  versionCode 1
+                  versionName '1.0'
+              }
+
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+          }
+
+          dependencies {
+              implementation 'com.google.mlkit:text-recognition:16.0.0'
+              implementation 'com.google.mlkit:translate:17.0.2'
+          }
+          __END__
+          cat > app/src/main/AndroidManifest.xml <<'__END__'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+              <uses-permission android:name="android.permission.INTERNET" />
+              <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+              <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+              <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+              <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+              <queries>
+                  <package android:name="com.playstation.remoteplay" />
+              </queries>
+
+              <application
+                  android:label="ترجمان الألعاب"
+                  android:icon="@mipmap/ic_launcher"
+                  android:supportsRtl="true"
+                  android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
+
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true"
+                      android:screenOrientation="portrait">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+
+                  <service
+                      android:name=".TranslatorService"
+                      android:exported="false"
+                      android:foregroundServiceType="mediaProjection" />
+              </application>
+          </manifest>
+          __END__
+          cat > app/src/main/java/com/tarjuman/app/MainActivity.java <<'__END__'
+          package com.tarjuman.app;
+
+          import android.app.Activity;
+          import android.content.Intent;
+          import android.content.SharedPreferences;
+          import android.graphics.Color;
+          import android.graphics.Typeface;
+          import android.graphics.drawable.GradientDrawable;
+          import android.media.projection.MediaProjectionManager;
+          import android.net.Uri;
+          import android.os.Build;
+          import android.os.Bundle;
+          import android.provider.Settings;
+          import android.view.Gravity;
+          import android.view.View;
+          import android.widget.Button;
+          import android.widget.CheckBox;
+          import android.widget.LinearLayout;
+          import android.widget.ScrollView;
+          import android.widget.TextView;
+          import android.widget.Toast;
+
+          public class MainActivity extends Activity {
+              static final int REQ_CAPTURE = 7;
+              static final String REMOTE_PLAY = "com.playstation.remoteplay";
+
+              LinearLayout root;
+              TextView overlayState;
+              SharedPreferences prefs;
+
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  prefs = getSharedPreferences("t", MODE_PRIVATE);
+                  if (Build.VERSION.SDK_INT >= 33) {
+                      requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, 1);
+                  }
+
+                  ScrollView sv = new ScrollView(this);
+                  sv.setBackgroundColor(0xFF071A1C);
+                  root = new LinearLayout(this);
+                  root.setOrientation(LinearLayout.VERTICAL);
+                  root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+                  int p = dp(18);
+                  root.setPadding(p, p, p, p);
+                  sv.addView(root);
+                  setContentView(sv);
+
+                  title("ترجمان الألعاب");
+                  note("يترجم ألعاب البلايستيشن للعربي فوق تطبيق «التشغيل عن بعد» وأنت تلعب.");
+                  overlayState = note("");
+
+                  button("١. السماح بالظهور فوق التطبيقات", v -> {
+                      try {
+                          startActivity(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                  Uri.parse("package:" + getPackageName())));
+                      } catch (Exception e) {
+                          toast("افتح إعدادات الجوال وفعّل «الظهور فوق التطبيقات» لترجمان الألعاب");
+                      }
+                  });
+                  button("٢. تشغيل زر الترجمة الطائر", v -> startBubble());
+                  button("٣. فتح التشغيل عن بعد", v -> openRemotePlay());
+
+                  check("نطق الترجمة بصوت عربي", "speak", true);
+                  check("خط ترجمة كبير", "big", false);
+                  check("الترجمة فوق الشاشة بدل تحت", "top", false);
+
+                  button("إيقاف زر الترجمة", v -> {
+                      stopService(new Intent(this, TranslatorService.class));
+                      toast("انطفى زر الترجمة");
+                  });
+
+                  note("طريقة الاستخدام:\n"
+                          + "١. اضغط «السماح بالظهور فوق التطبيقات» وفعّل ترجمان الألعاب، وارجع.\n"
+                          + "٢. اضغط «تشغيل زر الترجمة الطائر»، واختر «الشاشة كاملة» ثم «ابدأ».\n"
+                          + "٣. في التشغيل عن بعد اربط البلايستيشن وافتح اللعبة.\n"
+                          + "٤. شغّل الترجمة الإنجليزية من إعدادات اللعبة.\n"
+                          + "٥. اضغط الزر الطائر «ابدأ الترجمة». وإذا دخلت القوائم اضغط «إيقاف الترجمة».\n\n"
+                          + "تبي الترجمة على التلفزيون؟ اعرض شاشة الجوال على التلفزيون من «عرض الشاشة» أو «سمارت فيو» في جوالك.\n\n"
+                          + "الزر الطائر تقدر تسحبه بإصبعك لأي مكان.");
+              }
+
+              @Override
+              protected void onResume() {
+                  super.onResume();
+                  boolean ok = Settings.canDrawOverlays(this);
+                  overlayState.setText(ok ? "✓ مسموح بالظهور فوق التطبيقات"
+                          : "✗ لازم تسمح بالظهور فوق التطبيقات (الخطوة ١)");
+                  overlayState.setTextColor(ok ? 0xFF7DFFB0 : 0xFFFF8A80);
+              }
+
+              void startBubble() {
+                  if (!Settings.canDrawOverlays(this)) {
+                      toast("اسمح أول بالظهور فوق التطبيقات (الخطوة ١)");
+                      return;
+                  }
+                  MediaProjectionManager m = (MediaProjectionManager) getSystemService(MEDIA_PROJECTION_SERVICE);
+                  startActivityForResult(m.createScreenCaptureIntent(), REQ_CAPTURE);
+              }
+
+              @Override
+              protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+                  super.onActivityResult(requestCode, resultCode, data);
+                  if (requestCode != REQ_CAPTURE) return;
+                  if (resultCode == RESULT_OK && data != null) {
+                      Intent i = new Intent(this, TranslatorService.class);
+                      i.putExtra("code", resultCode);
+                      i.putExtra("data", data);
+                      startForegroundService(i);
+                      toast("تم ✓ الزر الطائر شغال، افتح اللعبة واضغطه");
+                      openRemotePlay();
+                  } else {
+                      toast("لازم تضغط «ابدأ» عشان التطبيق يقدر يقرأ الشاشة");
+                  }
+              }
+
+              void openRemotePlay() {
+                  Intent i = getPackageManager().getLaunchIntentForPackage(REMOTE_PLAY);
+                  if (i != null) {
+                      startActivity(i);
+                      return;
+                  }
+                  toast("نزّل تطبيق التشغيل عن بعد من سوني");
+                  try {
+                      startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + REMOTE_PLAY)));
+                  } catch (Exception e) {
+                      try {
+                          startActivity(new Intent(Intent.ACTION_VIEW,
+                                  Uri.parse("https://play.google.com/store/apps/details?id=" + REMOTE_PLAY)));
+                      } catch (Exception ignored) {
+                      }
+                  }
+              }
+
+              int dp(int v) {
+                  return Math.round(v * getResources().getDisplayMetrics().density);
+              }
+
+              GradientDrawable round(int color, int r) {
+                  GradientDrawable g = new GradientDrawable();
+                  g.setColor(color);
+                  g.setCornerRadius(r);
+                  return g;
+              }
+
+              TextView title(String s) {
+                  TextView t = new TextView(this);
+                  t.setText(s);
+                  t.setTextColor(0xFF2FD1BF);
+                  t.setTextSize(28);
+                  t.setTypeface(Typeface.DEFAULT_BOLD);
+                  t.setGravity(Gravity.CENTER);
+                  t.setPadding(0, dp(10), 0, dp(6));
+                  root.addView(t);
+                  return t;
+              }
+
+              TextView note(String s) {
+                  TextView t = new TextView(this);
+                  t.setText(s);
+                  t.setTextColor(0xFFB8D4D1);
+                  t.setTextSize(15);
+                  t.setLineSpacing(0, 1.3f);
+                  t.setPadding(0, dp(6), 0, dp(6));
+                  root.addView(t);
+                  return t;
+              }
+
+              Button button(String s, View.OnClickListener l) {
+                  Button b = new Button(this);
+                  b.setText(s);
+                  b.setAllCaps(false);
+                  b.setTextColor(Color.WHITE);
+                  b.setTextSize(17);
+                  b.setBackground(round(0xFF1FA89A, dp(16)));
+                  b.setPadding(dp(12), dp(14), dp(12), dp(14));
+                  b.setOnClickListener(l);
+                  LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                          LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                  lp.topMargin = dp(10);
+                  root.addView(b, lp);
+                  return b;
+              }
+
+              CheckBox check(String s, String key, boolean def) {
+                  CheckBox c = new CheckBox(this);
+                  c.setText(s);
+                  c.setTextColor(Color.WHITE);
+                  c.setTextSize(16);
+                  c.setChecked(prefs.getBoolean(key, def));
+                  c.setOnCheckedChangeListener((v, on) -> prefs.edit().putBoolean(key, on).apply());
+                  c.setPadding(0, dp(8), 0, dp(8));
+                  root.addView(c);
+                  return c;
+              }
+
+              void toast(String s) {
+                  Toast.makeText(this, s, Toast.LENGTH_LONG).show();
+              }
+          }
+          __END__
+          cat > app/src/main/java/com/tarjuman/app/TranslatorService.java <<'__END__'
+          package com.tarjuman.app;
+
+          import android.annotation.SuppressLint;
+          import android.app.Notification;
+          import android.app.NotificationChannel;
+          import android.app.NotificationManager;
+          import android.app.Service;
+          import android.content.Context;
+          import android.content.Intent;
+          import android.content.SharedPreferences;
+          import android.content.pm.ServiceInfo;
+          import android.graphics.Bitmap;
+          import android.graphics.Color;
+          import android.graphics.PixelFormat;
+          import android.graphics.Rect;
+          import android.graphics.Typeface;
+          import android.graphics.drawable.GradientDrawable;
+          import android.hardware.display.DisplayManager;
+          import android.hardware.display.VirtualDisplay;
+          import android.media.Image;
+          import android.media.ImageReader;
+          import android.media.projection.MediaProjection;
+          import android.media.projection.MediaProjectionManager;
+          import android.os.Build;
+          import android.os.Handler;
+          import android.os.HandlerThread;
+          import android.os.IBinder;
+          import android.os.Looper;
+          import android.speech.tts.TextToSpeech;
+          import android.util.DisplayMetrics;
+          import android.view.Gravity;
+          import android.view.MotionEvent;
+          import android.view.View;
+          import android.view.WindowManager;
+          import android.widget.TextView;
+
+          import com.google.mlkit.nl.translate.TranslateLanguage;
+          import com.google.mlkit.nl.translate.Translation;
+          import com.google.mlkit.nl.translate.Translator;
+          import com.google.mlkit.nl.translate.TranslatorOptions;
+          import com.google.mlkit.vision.common.InputImage;
+          import com.google.mlkit.vision.text.TextRecognition;
+          import com.google.mlkit.vision.text.TextRecognizer;
+          import com.google.mlkit.vision.text.latin.TextRecognizerOptions;
+
+          import org.json.JSONArray;
+
+          import java.io.BufferedReader;
+          import java.io.InputStreamReader;
+          import java.net.HttpURLConnection;
+          import java.net.URL;
+          import java.net.URLEncoder;
+          import java.nio.ByteBuffer;
+          import java.util.HashMap;
+          import java.util.Locale;
+          import java.util.concurrent.ExecutorService;
+          import java.util.concurrent.Executors;
+          import java.util.regex.Matcher;
+          import java.util.regex.Pattern;
+
+          public class TranslatorService extends Service {
+              static final Pattern SPEAKER = Pattern.compile("^([A-Z][A-Za-z.'\\- ]{1,22}?)\\s*[:;]\\s*(.{2,})$");
+
+              WindowManager wm;
+              TextView bubble, sub;
+              WindowManager.LayoutParams bp, sp;
+
+              MediaProjection mp;
+              VirtualDisplay vd;
+              ImageReader reader;
+              HandlerThread thread;
+              Handler bg, main;
+
+              TextRecognizer recog;
+              Translator mlTr;
+              TextToSpeech tts;
+              boolean ttsOk = false;
+              final ExecutorService net = Executors.newSingleThreadExecutor();
+              final HashMap<String, String> cache = new HashMap<>();
+              SharedPreferences prefs;
+
+              volatile boolean running = false;
+              volatile boolean busy = false;
+              int W, H;
+              String pending = "", lastDone = "";
+              int pendingCount = 0;
+              long blackSince = 0;
+              boolean warned = false;
+
+              @Override
+              public IBinder onBind(Intent intent) {
+                  return null;
+              }
+
+              @Override
+              public int onStartCommand(Intent intent, int flags, int startId) {
+                  startFg();
+                  if (intent == null) {
+                      stopSelf();
+                      return START_NOT_STICKY;
+                  }
+                  if (mp != null) return START_NOT_STICKY;
+
+                  prefs = getSharedPreferences("t", MODE_PRIVATE);
+                  int code = intent.getIntExtra("code", 0);
+                  Intent data;
+                  if (Build.VERSION.SDK_INT >= 33) data = intent.getParcelableExtra("data", Intent.class);
+                  else data = intent.getParcelableExtra("data");
+
+                  MediaProjectionManager m = (MediaProjectionManager) getSystemService(Context.MEDIA_PROJECTION_SERVICE);
+                  try {
+                      mp = m.getMediaProjection(code, data);
+                  } catch (Exception e) {
+                      mp = null;
+                  }
+                  if (mp == null) {
+                      stopSelf();
+                      return START_NOT_STICKY;
+                  }
+
+                  main = new Handler(Looper.getMainLooper());
+                  thread = new HandlerThread("capture");
+                  thread.start();
+                  bg = new Handler(thread.getLooper());
+
+                  mp.registerCallback(new MediaProjection.Callback() {
+                      @Override
+                      public void onStop() {
+                          main.post(() -> stopSelf());
+                      }
+                  }, main);
+
+                  DisplayMetrics dm = getResources().getDisplayMetrics();
+                  int a = Math.max(dm.widthPixels, dm.heightPixels);
+                  int b = Math.min(dm.widthPixels, dm.heightPixels);
+                  float s = Math.min(1f, 1600f / a);
+                  W = Math.round(a * s);
+                  H = Math.round(b * s);
+                  reader = ImageReader.newInstance(W, H, PixelFormat.RGBA_8888, 2);
+                  vd = mp.createVirtualDisplay("tarjuman", W, H, dm.densityDpi,
+                          DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, reader.getSurface(), null, bg);
+
+                  recog = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
+                  TranslatorOptions opts = new TranslatorOptions.Builder()
+                          .setSourceLanguage(TranslateLanguage.ENGLISH)
+                          .setTargetLanguage(TranslateLanguage.ARABIC)
+                          .build();
+                  mlTr = Translation.getClient(opts);
+                  mlTr.downloadModelIfNeeded();
+                  tts = new TextToSpeech(this, st -> {
+                      if (st == TextToSpeech.SUCCESS) {
+                          int r = tts.setLanguage(new Locale("ar"));
+                          ttsOk = r >= 0;
+                      }
+                  });
+
+                  addOverlays();
+                  return START_NOT_STICKY;
+              }
+
+              void startFg() {
+                  NotificationManager nm = getSystemService(NotificationManager.class);
+                  nm.createNotificationChannel(new NotificationChannel("t", "ترجمان الألعاب", NotificationManager.IMPORTANCE_LOW));
+                  Notification n = new Notification.Builder(this, "t")
+                          .setContentTitle("ترجمان الألعاب")
+                          .setContentText("زر الترجمة شغال")
+                          .setSmallIcon(android.R.drawable.ic_menu_view)
+                          .build();
+                  if (Build.VERSION.SDK_INT >= 29) startForeground(1, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION);
+                  else startForeground(1, n);
+              }
+
+              int dp(int v) {
+                  return Math.round(v * getResources().getDisplayMetrics().density);
+              }
+
+              GradientDrawable round(int color, int r) {
+                  GradientDrawable g = new GradientDrawable();
+                  g.setColor(color);
+                  g.setCornerRadius(r);
+                  return g;
+              }
+
+              Rect screen() {
+                  if (Build.VERSION.SDK_INT >= 30) return wm.getCurrentWindowMetrics().getBounds();
+                  DisplayMetrics dm = getResources().getDisplayMetrics();
+                  return new Rect(0, 0, dm.widthPixels, dm.heightPixels);
+              }
+
+              @SuppressLint("ClickableViewAccessibility")
+              void addOverlays() {
+                  wm = (WindowManager) getSystemService(WINDOW_SERVICE);
+                  int type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
+
+                  bubble = new TextView(this);
+                  bubble.setTextColor(Color.WHITE);
+                  bubble.setTextSize(14);
+                  bubble.setTypeface(Typeface.DEFAULT_BOLD);
+                  bubble.setPadding(dp(14), dp(9), dp(14), dp(9));
+                  setBubble();
+                  bp = new WindowManager.LayoutParams(
+                          WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT, type,
+                          WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE, PixelFormat.TRANSLUCENT);
+                  bp.gravity = Gravity.TOP | Gravity.LEFT;
+                  bp.x = dp(12);
+                  bp.y = dp(70);
+                  bubble.setOnTouchListener(new View.OnTouchListener() {
+                      int sx, sy;
+                      float tx, ty;
+                      boolean moved;
+
+                      @Override
+                      public boolean onTouch(View v, MotionEvent e) {
+                          switch (e.getAction()) {
+                              case MotionEvent.ACTION_DOWN:
+                                  sx = bp.x;
+                                  sy = bp.y;
+                                  tx = e.getRawX();
+                                  ty = e.getRawY();
+                                  moved = false;
+                                  return true;
+                              case MotionEvent.ACTION_MOVE:
+                                  float dx = e.getRawX() - tx, dy = e.getRawY() - ty;
+                                  if (Math.abs(dx) + Math.abs(dy) > dp(8)) moved = true;
+                                  if (moved) {
+                                      bp.x = sx + (int) dx;
+                                      bp.y = sy + (int) dy;
+                                      try {
+                                          wm.updateViewLayout(bubble, bp);
+                                      } catch (Exception ignored) {
+                                      }
+                                  }
+                                  return true;
+                              case MotionEvent.ACTION_UP:
+                                  if (!moved) toggle();
+                                  return true;
+                          }
+                          return false;
+                      }
+                  });
+                  wm.addView(bubble, bp);
+
+                  sub = new TextView(this);
+                  sub.setTextColor(Color.WHITE);
+                  sub.setTypeface(Typeface.DEFAULT_BOLD);
+                  sub.setGravity(Gravity.CENTER);
+                  sub.setShadowLayer(4, 0, 2, Color.BLACK);
+                  sub.setBackground(round(0xB3000000, dp(14)));
+                  sub.setPadding(dp(14), dp(8), dp(14), dp(8));
+                  sub.setTextDirection(View.TEXT_DIRECTION_RTL);
+                  sub.setVisibility(View.GONE);
+                  sp = new WindowManager.LayoutParams(
+                          WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT, type,
+                          WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                          PixelFormat.TRANSLUCENT);
+                  sp.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
+                  wm.addView(sub, sp);
+              }
+
+              void setBubble() {
+                  bubble.setText(running ? "⏸ إيقاف الترجمة" : "▶ ابدأ الترجمة");
+                  bubble.setBackground(round(running ? 0xE6C0392B : 0xE61FA89A, dp(22)));
+              }
+
+              void toggle() {
+                  running = !running;
+                  setBubble();
+                  pending = "";
+                  lastDone = "";
+                  pendingCount = 0;
+                  blackSince = 0;
+                  warned = false;
+                  if (running) {
+                      showSub("بدأت الترجمة… انتظر أول حوار");
+                      bg.post(loop);
+                  } else {
+                      hideSub();
+                      if (tts != null) tts.stop();
+                  }
+              }
+
+              final Runnable hideR = () -> {
+                  if (sub != null) sub.setVisibility(View.GONE);
+              };
+
+              void hideSub() {
+                  main.removeCallbacks(hideR);
+                  if (sub != null) sub.setVisibility(View.GONE);
+              }
+
+              void showSub(String text) {
+                  if (sub == null) return;
+                  Rect r = screen();
+                  boolean big = prefs.getBoolean("big", false);
+                  boolean top = prefs.getBoolean("top", false);
+                  sub.setTextSize(big ? 24 : 18);
+                  sub.setMaxWidth((int) (r.width() * 0.8f));
+                  sp.gravity = (top ? Gravity.TOP : Gravity.BOTTOM) | Gravity.CENTER_HORIZONTAL;
+                  sp.y = top ? dp(16) : (int) (r.height() * 0.27f);
+                  sub.setText(text);
+                  sub.setVisibility(View.VISIBLE);
+                  try {
+                      wm.updateViewLayout(sub, sp);
+                  } catch (Exception ignored) {
+                  }
+                  main.removeCallbacks(hideR);
+                  main.postDelayed(hideR, 7000 + text.length() * 60L);
+              }
+
+              final Runnable loop = new Runnable() {
+                  @Override
+                  public void run() {
+                      if (!running) return;
+                      if (!busy) grab();
+                      bg.postDelayed(this, 1000);
+                  }
+              };
+
+              void grab() {
+                  Image img = null;
+                  try {
+                      img = reader.acquireLatestImage();
+                  } catch (Exception ignored) {
+                  }
+                  if (img == null) return;
+                  Bitmap full;
+                  try {
+                      Image.Plane pl = img.getPlanes()[0];
+                      ByteBuffer buf = pl.getBuffer();
+                      int ps = pl.getPixelStride(), rs = pl.getRowStride();
+                      int pad = rs - ps * W;
+                      full = Bitmap.createBitmap(W + pad / ps, H, Bitmap.Config.ARGB_8888);
+                      full.copyPixelsFromBuffer(buf);
+                  } catch (Exception e) {
+                      return;
+                  } finally {
+                      img.close();
+                  }
+
+                  if (isBlack(full)) {
+                      long now = System.currentTimeMillis();
+                      if (blackSince == 0) blackSince = now;
+                      else if (now - blackSince > 8000 && !warned) {
+                          warned = true;
+                          main.post(() -> showSub("الشاشة توصلني سوداء — يمكن تطبيق سوني يمنع قراءة الشاشة"));
+                      }
+                      full.recycle();
+                      return;
+                  }
+                  blackSince = 0;
+
+                  int x0 = (int) (W * 0.08f), x1 = (int) (W * 0.92f);
+                  int y0 = (int) (H * 0.72f), y1 = (int) (H * 0.97f);
+                  Bitmap crop = Bitmap.createBitmap(full, x0, y0, x1 - x0, y1 - y0);
+                  if (crop != full) full.recycle();
+
+                  busy = true;
+                  recog.process(InputImage.fromBitmap(crop, 0))
+                          .addOnSuccessListener(result -> {
+                              busy = false;
+                              onText(result.getText());
+                          })
+                          .addOnFailureListener(e -> busy = false);
+              }
+
+              boolean isBlack(Bitmap b) {
+                  int max = 0;
+                  int w = b.getWidth(), h = b.getHeight();
+                  for (int i = 1; i < 20; i++) {
+                      for (int j = 1; j < 12; j++) {
+                          int c = b.getPixel(w * i / 20, h * j / 12);
+                          int v = (Color.red(c) + Color.green(c) + Color.blue(c)) / 3;
+                          if (v > max) max = v;
+                      }
+                  }
+                  return max < 16;
+              }
+
+              /* ---------- النص ---------- */
+              static String norm(String s) {
+                  return s.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9 ]", "").replaceAll("\\s+", " ").trim();
+              }
+
+              static double sim(String a, String b) {
+                  a = norm(a);
+                  b = norm(b);
+                  if (a.isEmpty() || b.isEmpty()) return 0;
+                  if (a.equals(b)) return 1;
+                  int m = a.length(), n = b.length();
+                  if (Math.abs(m - n) > Math.max(m, n) * 0.5) return 0;
+                  int[] prev = new int[n + 1];
+                  for (int j = 0; j <= n; j++) prev[j] = j;
+                  for (int i = 1; i <= m; i++) {
+                      int[] cur = new int[n + 1];
+                      cur[0] = i;
+                      for (int j = 1; j <= n; j++) {
+                          int cost = a.charAt(i - 1) == b.charAt(j - 1) ? 0 : 1;
+                          cur[j] = Math.min(Math.min(prev[j] + 1, cur[j - 1] + 1), prev[j - 1] + cost);
+                      }
+                      prev = cur;
+                  }
+                  return 1.0 - (double) prev[n] / Math.max(m, n);
+              }
+
+              static String clean(String raw) {
+                  if (raw == null) return "";
+                  String t = raw.replaceAll("[|_~`^<>{}\\[\\]\\\\@#*=]", " ").replaceAll("\\s+", " ").trim();
+                  t = t.replaceAll("^[^A-Za-z\"'(]+", "");
+                  if (t.length() < 3) return "";
+                  int letters = 0;
+                  for (int i = 0; i < t.length(); i++) if (Character.isLetter(t.charAt(i))) letters++;
+                  if (letters < t.length() * 0.55) return "";
+                  int words = 0;
+                  for (String w : t.split(" ")) if (w.replaceAll("[^A-Za-z]", "").length() >= 2) words++;
+                  if (words < 2) return "";
+                  return t;
+              }
+
+              void onText(String raw) {
+                  if (!running) return;
+                  String t = clean(raw);
+                  if (t.isEmpty()) {
+                      pending = "";
+                      pendingCount = 0;
+                      return;
+                  }
+                  if (sim(t, pending) > 0.9) pendingCount++;
+                  else {
+                      pending = t;
+                      pendingCount = 0;
+                      return;
+                  }
+                  if (pendingCount != 1) return;
+                  if (sim(t, lastDone) > 0.85) return;
+                  lastDone = t;
+
+                  String name = null, line = t;
+                  Matcher m = SPEAKER.matcher(t);
+                  if (m.matches() && m.group(1).trim().split("\\s+").length <= 3) {
+                      name = m.group(1).trim();
+                      line = m.group(2).trim();
+                  }
+                  translate(line, name);
+              }
+
+              /* ---------- الترجمة ---------- */
+              void translate(String en, String name) {
+                  String c = cache.get(en);
+                  if (c != null) {
+                      deliver(c, name);
+                      return;
+                  }
+                  net.execute(() -> {
+                      String out = gtx(en);
+                      if (out != null) {
+                          main.post(() -> {
+                              cache.put(en, out);
+                              deliver(out, name);
+                          });
+                      } else {
+                          main.post(() -> mlTr.translate(en)
+                                  .addOnSuccessListener(r -> {
+                                      cache.put(en, r);
+                                      deliver(r, name);
+                                  })
+                                  .addOnFailureListener(e -> showSub("الترجمة ما اشتغلت، تأكد من الإنترنت")));
+                      }
+                  });
+              }
+
+              static String gtx(String q) {
+                  HttpURLConnection c = null;
+                  try {
+                      URL u = new URL("https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ar&dt=t&q="
+                              + URLEncoder.encode(q, "UTF-8"));
+                      c = (HttpURLConnection) u.openConnection();
+                      c.setConnectTimeout(5000);
+                      c.setReadTimeout(5000);
+                      BufferedReader r = new BufferedReader(new InputStreamReader(c.getInputStream(), "UTF-8"));
+                      StringBuilder sb = new StringBuilder();
+                      String l;
+                      while ((l = r.readLine()) != null) sb.append(l);
+                      r.close();
+                      JSONArray a = new JSONArray(sb.toString()).getJSONArray(0);
+                      StringBuilder o = new StringBuilder();
+                      for (int i = 0; i < a.length(); i++) {
+                          JSONArray x = a.optJSONArray(i);
+                          if (x != null && !x.isNull(0)) o.append(x.getString(0));
+                      }
+                      return o.length() > 0 ? o.toString() : null;
+                  } catch (Exception e) {
+                      return null;
+                  } finally {
+                      if (c != null) c.disconnect();
+                  }
+              }
+
+              void deliver(String ar, String name) {
+                  if (!running) return;
+                  showSub(name != null ? name + ": " + ar : ar);
+                  if (ttsOk && prefs.getBoolean("speak", true)) {
+                      float pitch = name == null ? 0.95f : 0.75f + (Math.abs(name.hashCode()) % 7) * 0.08f;
+                      tts.setPitch(pitch);
+                      tts.setSpeechRate(1.05f);
+                      tts.speak(ar, TextToSpeech.QUEUE_FLUSH, null, "u");
+                  }
+              }
+
+              @Override
+              public void onDestroy() {
+                  running = false;
+                  try {
+                      if (bubble != null) wm.removeView(bubble);
+                  } catch (Exception ignored) {
+                  }
+                  try {
+                      if (sub != null) wm.removeView(sub);
+                  } catch (Exception ignored) {
+                  }
+                  bubble = null;
+                  sub = null;
+                  try {
+                      if (vd != null) vd.release();
+                  } catch (Exception ignored) {
+                  }
+                  MediaProjection p = mp;
+                  mp = null;
+                  try {
+                      if (p != null) p.stop();
+                  } catch (Exception ignored) {
+                  }
+                  try {
+                      if (reader != null) reader.close();
+                  } catch (Exception ignored) {
+                  }
+                  try {
+                      if (recog != null) recog.close();
+                  } catch (Exception ignored) {
+                  }
+                  try {
+                      if (mlTr != null) mlTr.close();
+                  } catch (Exception ignored) {
+                  }
+                  try {
+                      if (tts != null) tts.shutdown();
+                  } catch (Exception ignored) {
+                  }
+                  if (thread != null) thread.quitSafely();
+                  net.shutdownNow();
+                  super.onDestroy();
+              }
+          }
+          __END__
+          cat > app/src/main/res/drawable/ic_fg.xml <<'__END__'
+          <?xml version="1.0" encoding="utf-8"?>
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="108dp"
+              android:height="108dp"
+              android:viewportWidth="108"
+              android:viewportHeight="108">
+              <path
+                  android:fillColor="#FFFFFF"
+                  android:pathData="M30,34 L78,34 Q84,34 84,40 L84,62 Q84,68 78,68 L52,68 L40,78 L42,68 L30,68 Q24,68 24,62 L24,40 Q24,34 30,34 Z" />
+              <path
+                  android:fillColor="#1FA89A"
+                  android:pathData="M34,44 L74,44 L74,48 L34,48 Z M34,54 L62,54 L62,58 L34,58 Z" />
+          </vector>
+          __END__
+          cat > app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml <<'__END__'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@color/icon_bg" />
+              <foreground android:drawable="@drawable/ic_fg" />
+          </adaptive-icon>
+          __END__
+          cat > app/src/main/res/values/colors.xml <<'__END__'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <color name="icon_bg">#1FA89A</color>
+          </resources>
+          __END__
+          cat > build.gradle <<'__END__'
+          plugins {
+              id 'com.android.application' version '8.5.2' apply false
+          }
+          __END__
+          cat > gradle.properties <<'__END__'
+          android.useAndroidX=true
+          org.gradle.jvmargs=-Xmx3g -Dfile.encoding=UTF-8
+          __END__
+          cat > settings.gradle <<'__END__'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "Tarjuman"
+          include ':app'
+          __END__
+
+      - name: بناء التطبيق
+        run: gradle assembleDebug --no-daemon --stacktrace
+
+      - name: نشر ملف التثبيت
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk tarjuman.apk
+          gh release delete apk --yes --cleanup-tag --repo "${{ github.repository }}" || true
+          sleep 3
+          gh release create apk tarjuman.apk --repo "${{ github.repository }}" --title "ترجمان الألعاب" --notes "اضغط tarjuman.apk عشان تنزّل التطبيق"
+
+      - name: حفظ نسخة احتياطية
+        uses: actions/upload-artifact@v4
+        with:
+          name: tarjuman-apk
+          path: tarjuman.apk
